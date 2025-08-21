@@ -59,13 +59,22 @@ public final class DataController {
         final String username = storageConfig.getUsername();
         final String password = storageConfig.getPassword();
 
-        hikariConfig.setJdbcUrl(jdbcUrl);
-        hikariConfig.setUsername(username);
-        hikariConfig.setPassword(password);
-        hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
-        hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
-        hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        if (storageConfig.getType().equalsIgnoreCase("mysql")) {
+            // MySQL/MariaDB database
+            hikariConfig.setJdbcUrl(jdbcUrl);
+            hikariConfig.setUsername(username);
+            hikariConfig.setPassword(password);
+            hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+            hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+            hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        } else {
+            // SQLite database
+            hikariConfig.setJdbcUrl(jdbcUrl);
+            hikariConfig.setDriverClassName("org.sqlite.JDBC");
+        }
+
         hikariConfig.setMaximumPoolSize(10);
+
         return hikariConfig;
     }
 
