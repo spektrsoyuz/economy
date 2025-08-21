@@ -1,4 +1,4 @@
-package com.spektrsoyuz.economy.model;
+package com.spektrsoyuz.economy.model.account;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
 import lombok.Getter;

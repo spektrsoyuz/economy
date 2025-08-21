@@ -1,7 +1,7 @@
 package com.spektrsoyuz.economy.controller;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
-import com.spektrsoyuz.economy.model.Account;
+import com.spektrsoyuz.economy.model.account.Account;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;

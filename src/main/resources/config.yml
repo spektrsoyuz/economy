@@ -1,0 +1,13 @@
+config-version: 1
+prefix: "<color:#ffffff>Economy</color> <white>»</white>"
+currency-name: "crowns"
+currency-name-singular: "crown"
+currency-name-plural: "crowns"
+currency-symbol: ""
+
+storage:
+  hostname: "127.0.0.1"
+  port: 3306
+  database: "economy"
+  username: "username"
+  password: "password"

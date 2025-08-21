@@ -1,15 +1,18 @@
 package com.spektrsoyuz.economy;
 
 import com.spektrsoyuz.economy.controller.AccountController;
+import com.spektrsoyuz.economy.controller.ConfigController;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class EconomyPlugin extends JavaPlugin {
 
     private final AccountController accountController = new AccountController(this);
+    private final ConfigController configController = new ConfigController(this);
 
     @Override
     public void onLoad() {
         // Plugin load logic
+        this.configController.initialize();
     }
 
     @Override
