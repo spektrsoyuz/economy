@@ -1,11 +1,13 @@
-config-version: 1
-prefix: "<color:#ffffff>Economy</color> <white>»</white>"
-currency-name: "crowns"
-currency-name-singular: "crown"
-currency-name-plural: "crowns"
-currency-symbol: ""
+command-prefix: "<color:#ff7c3b>Economy</color> <white>»</white>"
+
+currency:
+  name: "crowns"
+  name-singular: "crown"
+  name-plural: "crowns"
+  symbol: ""
 
 storage:
+  type: "mysql"
   hostname: "127.0.0.1"
   port: 3306
   database: "economy"

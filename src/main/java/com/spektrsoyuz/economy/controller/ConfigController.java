@@ -1,6 +1,7 @@
 package com.spektrsoyuz.economy.controller;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
+import com.spektrsoyuz.economy.model.CurrencyConfig;
 import com.spektrsoyuz.economy.model.StorageConfig;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
@@ -72,12 +73,27 @@ public final class ConfigController {
     }
 
     /**
-     * Gets the version of the loaded primary configuration.
+     * Gets the message prefix from the message config
      *
-     * @return The configuration version number
+     * @return The message prefix
      */
-    public int getConfigVersion() {
-        return this.primaryConfig.node("config-version").getInt(0);
+    public @NotNull String getPrefix() {
+        return this.primaryConfig.node("command-prefix").getString("");
+    }
+
+    /**
+     * Gets the currency configuration section from the primary configuration.
+     *
+     * @return The {@link CurrencyConfig} object
+     */
+    public @NotNull CurrencyConfig getCurrencyConfig() {
+        try {
+            final CurrencyConfig currencyConfig = this.primaryConfig.node("currency").get(CurrencyConfig.class);
+            return currencyConfig != null ? currencyConfig : new CurrencyConfig();
+        } catch (final SerializationException e) {
+            this.plugin.getComponentLogger().error("Failed to load currency config, loading defaults", e);
+            return new CurrencyConfig();
+        }
     }
 
     /**
@@ -90,18 +106,9 @@ public final class ConfigController {
             final StorageConfig storageConfig = this.primaryConfig.node("storage").get(StorageConfig.class);
             return storageConfig != null ? storageConfig : new StorageConfig();
         } catch (final SerializationException e) {
-            this.plugin.getComponentLogger().error("Failed to load storage config", e);
+            this.plugin.getComponentLogger().error("Failed to load storage config, loading defaults", e);
             return new StorageConfig();
         }
-    }
-
-    /**
-     * Gets the message prefix from the message config
-     *
-     * @return The message prefix
-     */
-    public @NotNull String getPrefix() {
-        return this.primaryConfig.node("prefix").getString("prefix");
     }
 
     /**
