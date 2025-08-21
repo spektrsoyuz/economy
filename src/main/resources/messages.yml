@@ -1,4 +1,7 @@
 # Command messages
-
+command-balance-other: "<prefix> <gray>Account '<white><name></white>' has <symbol><yellow><amount></yellow> <currency></gray>"
+command-balance: "<prefix> <gray>You have <symbol><yellow><amount></yellow> <currency></gray>"
 
 # Error messages
+error-account-not-found: "<prefix> <red>No account found</red>"
+error-sender-not-player: "<prefix> <red>Only players can use that command!</red>"

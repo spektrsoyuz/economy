@@ -60,12 +60,14 @@ public final class BalanceCommand {
                     final DecimalFormat format = new DecimalFormat("0.#");
                     final String balance = format.format(account.getBalance().doubleValue());
 
+                    final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
                     final String currencyFormat = account.getBalance().doubleValue() > 1
                             ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
                             : this.plugin.getConfigController().getCurrencyConfig().getNameSingular();
 
                     // Send message to the sender
                     sender.sendMessage(this.plugin.getConfigController().getMessage("command-balance",
+                            Placeholder.parsed("symbol", symbol),
                             Placeholder.parsed("amount", balance),
                             Placeholder.parsed("currency", currencyFormat)));
 
@@ -93,6 +95,7 @@ public final class BalanceCommand {
                     final DecimalFormat format = new DecimalFormat("0.#");
                     final String balance = format.format(account.getBalance().doubleValue());
 
+                    final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
                     final String currencyFormat = account.getBalance().doubleValue() > 1
                             ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
                             : this.plugin.getConfigController().getCurrencyConfig().getNameSingular();
@@ -100,6 +103,7 @@ public final class BalanceCommand {
                     // Send message to the sender
                     sender.sendMessage(this.plugin.getConfigController().getMessage("command-balance-other",
                             Placeholder.parsed("name", name),
+                            Placeholder.parsed("symbol", symbol),
                             Placeholder.parsed("amount", balance),
                             Placeholder.parsed("currency", currencyFormat)));
 
