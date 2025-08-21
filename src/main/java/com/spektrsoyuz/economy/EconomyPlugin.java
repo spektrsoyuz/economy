@@ -1,5 +1,6 @@
 package com.spektrsoyuz.economy;
 
+import com.spektrsoyuz.economy.command.BalanceCommand;
 import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
@@ -66,7 +67,7 @@ public final class EconomyPlugin extends JavaPlugin {
         this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             final Commands registrar = event.registrar();
 
-            //new BalanceCommand(this).register(registrar);
+            new BalanceCommand(this).register(registrar);
         });
     }
 
