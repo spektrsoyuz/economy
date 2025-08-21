@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.command.suggest.AccountSuggestionProvider;
+import com.spektrsoyuz.economy.model.account.Account;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import lombok.RequiredArgsConstructor;
@@ -56,23 +57,7 @@ public final class BalanceCommand {
         }
 
         return this.plugin.getAccountController().getAccount(player)
-                .map(account -> {
-                    final DecimalFormat format = new DecimalFormat("0.#");
-                    final String balance = format.format(account.getBalance().doubleValue());
-
-                    final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
-                    final String currencyFormat = account.getBalance().doubleValue() > 1
-                            ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
-                            : this.plugin.getConfigController().getCurrencyConfig().getNameSingular();
-
-                    // Send message to the sender
-                    sender.sendMessage(this.plugin.getConfigController().getMessage("command-balance",
-                            Placeholder.parsed("symbol", symbol),
-                            Placeholder.parsed("amount", balance),
-                            Placeholder.parsed("currency", currencyFormat)));
-
-                    return Command.SINGLE_SUCCESS;
-                })
+                .map(account -> this.sendMessage(sender, account, "command-balance"))
                 .orElseGet(() -> {
                     // Account does not exist
                     sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
@@ -91,28 +76,39 @@ public final class BalanceCommand {
         final String name = ctx.getArgument("name", String.class);
 
         return this.plugin.getAccountController().getAccount(name)
-                .map(account -> {
-                    final DecimalFormat format = new DecimalFormat("0.#");
-                    final String balance = format.format(account.getBalance().doubleValue());
-
-                    final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
-                    final String currencyFormat = account.getBalance().doubleValue() > 1
-                            ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
-                            : this.plugin.getConfigController().getCurrencyConfig().getNameSingular();
-
-                    // Send message to the sender
-                    sender.sendMessage(this.plugin.getConfigController().getMessage("command-balance-other",
-                            Placeholder.parsed("name", name),
-                            Placeholder.parsed("symbol", symbol),
-                            Placeholder.parsed("amount", balance),
-                            Placeholder.parsed("currency", currencyFormat)));
-
-                    return Command.SINGLE_SUCCESS;
-                })
+                .map(account -> this.sendMessage(sender, account, "command-balance-other"))
                 .orElseGet(() -> {
                     // Account does not exist
                     sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
                     return 0;
                 });
+    }
+
+    /**
+     * Sends a result message to the sender
+     *
+     * @param sender  command sender
+     * @param account account used for the message
+     * @param key     message key
+     * @return success status
+     */
+    private int sendMessage(final CommandSender sender, final Account account, final String key) {
+        final String name = account.getName();
+        final DecimalFormat format = new DecimalFormat("0.#");
+        final String balance = format.format(account.getBalance().doubleValue());
+
+        final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
+        final String currencyFormat = account.getBalance().doubleValue() > 1
+                ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
+                : this.plugin.getConfigController().getCurrencyConfig().getNameSingular();
+
+        // Send message to the sender
+        sender.sendMessage(this.plugin.getConfigController().getMessage(key,
+                Placeholder.parsed("name", name),
+                Placeholder.parsed("symbol", symbol),
+                Placeholder.parsed("amount", balance),
+                Placeholder.parsed("currency", currencyFormat)));
+
+        return Command.SINGLE_SUCCESS;
     }
 }
