@@ -6,9 +6,11 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 // Controller class for economy accounts
@@ -23,13 +25,17 @@ public final class AccountController {
      * Initializes the controller.
      */
     public void initialize() {
+        this.plugin.getComponentLogger().info("Loading accounts into cache");
 
+        // Load accounts
+        this.loadAccounts().join();
+        this.plugin.getComponentLogger().info("Loaded {} accounts into cache", this.accounts.size());
     }
 
     /**
      * Gets an account from the cache by its ID.
      *
-     * @param id Account ID
+     * @param id account ID
      * @return an {@code Optional} containing the account if found,
      * otherwise an empty {@code Optional}
      */
@@ -51,7 +57,7 @@ public final class AccountController {
     /**
      * Gets an Account from the cache by its name.
      *
-     * @param name Account name
+     * @param name account name
      * @return an {@code Optional} containing the account if found,
      * otherwise an empty {@code Optional}
      */
@@ -60,5 +66,60 @@ public final class AccountController {
             if (account.getName().equals(name)) return Optional.of(account);
         }
         return Optional.empty();
+    }
+
+    /**
+     * Creates a new account and adds it to the cache.
+     *
+     * @param id      account ID
+     * @param name    account name
+     * @param balance starting balance
+     * @return true if successful, otherwise false
+     */
+    public boolean createAccount(final UUID id, final String name, final BigDecimal balance) {
+        final Account account = new Account(this.plugin, id, name, balance);
+
+        this.accounts.put(id, account);
+        return true;
+    }
+
+    /**
+     * Deletes an account from the cache.
+     *
+     * @param id account ID to delete
+     * @return true if successful, otherwise false
+     */
+    public boolean deleteAccount(final UUID id) {
+        this.accounts.remove(id);
+
+        this.plugin.getDataController().deleteAccount(id);
+        return true;
+    }
+
+    /**
+     * Load all accounts into the cache from the database.
+     *
+     * @return A {@code CompletableFuture} with no result
+     */
+    private CompletableFuture<Void> loadAccounts() {
+        return this.plugin.getDataController().queryAccounts().thenAccept(accounts -> {
+            for (final Account account : accounts) {
+                this.accounts.put(account.getId(), account);
+            }
+        });
+    }
+
+    /**
+     * Sets the account name to a new name
+     *
+     * @param id   account ID
+     * @param name new account name
+     * @return true if successful, otherwise false
+     */
+    public boolean renameAccount(final UUID id, final String name) {
+        final Account account = this.accounts.get(id);
+
+        if (account != null) return account.setName(name);
+        return false;
     }
 }

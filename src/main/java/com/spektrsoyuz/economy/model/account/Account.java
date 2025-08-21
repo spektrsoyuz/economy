@@ -33,7 +33,7 @@ public final class Account {
         this.id = id;
         this.name = name;
         this.balance = balance;
-        this.consumer = null; //plugin.getDataController().saveAccount();
+        this.consumer = plugin.getDataController()::saveAccount;
 
         this.save();
     }
@@ -59,6 +59,19 @@ public final class Account {
      */
     public boolean addBalance(final BigDecimal amount) {
         this.balance = this.balance.add(amount);
+
+        this.save();
+        return true;
+    }
+
+    /**
+     * Subtracts from the account balance.
+     *
+     * @param amount Amount to subtract from the account
+     * @return true if successful, false otherwise
+     */
+    public boolean subtractBalance(final BigDecimal amount) {
+        this.balance = this.balance.subtract(amount);
 
         this.save();
         return true;
