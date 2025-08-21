@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.util.*;
 
+// Model class for Vault modern economy integration
 @RequiredArgsConstructor
 public final class EconomyImpl implements Economy {
 

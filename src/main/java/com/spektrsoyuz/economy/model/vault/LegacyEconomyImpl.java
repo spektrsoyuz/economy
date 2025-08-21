@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+// Model class for Vault legacy economy integration
 @SuppressWarnings("deprecation")
 @RequiredArgsConstructor
 public class LegacyEconomyImpl implements Economy {
