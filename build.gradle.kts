@@ -70,6 +70,14 @@ paper {
     }
 
     permissions {
+        register("economy.balance")
 
+        register("economy.*") {
+            this.description = "Grants access to all commands"
+            this.default = BukkitPluginDescription.Permission.Default.OP
+            this.children = listOf(
+                "economy.balance",
+            )
+        }
     }
 }
