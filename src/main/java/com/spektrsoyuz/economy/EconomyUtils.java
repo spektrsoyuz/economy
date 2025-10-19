@@ -8,4 +8,5 @@ public final class EconomyUtils {
     // Command permissions
     public static final String PERMISSION_COMMAND_BALANCE = "economy.balance";
     public static final String PERMISSION_COMMAND_BALANCE_OTHER = "economy.balance.other";
+    public static final String PERMISSION_COMMAND_PAY = "economy.pay";
 }
