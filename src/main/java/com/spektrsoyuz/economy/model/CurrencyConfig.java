@@ -7,8 +7,16 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 @ConfigSerializable
 public final class CurrencyConfig {
 
-    private final String name = "crowns";
-    private final String nameSingular = "crown";
-    private final String namePlural = "crowns";
-    private final String symbol = "";
+    private final String name;
+    private final String nameSingular;
+    private final String namePlural;
+    private final String symbol;
+
+    // Constructor
+    public CurrencyConfig() {
+        this.name = "crowns";
+        this.nameSingular = "crown";
+        this.namePlural = "crowns";
+        this.symbol = "";
+    }
 }

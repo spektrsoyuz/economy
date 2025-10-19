@@ -7,10 +7,20 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 @ConfigSerializable
 public final class StorageConfig {
 
-    private final String type = "mysql";
-    private final String host = "127.0.0.1";
-    private final int port = 3306;
-    private final String database = "economy";
-    private final String username = "username";
-    private final String password = "password";
+    private final String type;
+    private final String host;
+    private final int port;
+    private final String database;
+    private final String username;
+    private final String password;
+
+    // Constructor
+    public StorageConfig() {
+        this.type = "mysql";
+        this.host = "127.0.0.1";
+        this.port = 3306;
+        this.database = "economy";
+        this.username = "username";
+        this.password = "password";
+    }
 }
