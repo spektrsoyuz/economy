@@ -11,8 +11,8 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.configurate.serialize.SerializationException;
-import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,18 +32,18 @@ public final class ConfigController {
      * Initializes the controller.
      */
     public void initialize() {
-        this.primaryConfig = this.createNode("config.yml");
-        this.messagesConfig = this.createNode("messages.yml");
+        this.primaryConfig = this.createNode("config.conf");
+        this.messagesConfig = this.createNode("messages.conf");
     }
 
     /**
-     * Creates a YAML configuration loader for a specified file path.
+     * Creates a HOCON configuration loader for a specified file path.
      *
      * @param path The path to the configuration file
-     * @return A configured {@link YamlConfigurationLoader}
+     * @return A configured {@link HoconConfigurationLoader}
      */
-    private YamlConfigurationLoader createLoader(final Path path) {
-        return YamlConfigurationLoader.builder()
+    private HoconConfigurationLoader createLoader(final Path path) {
+        return HoconConfigurationLoader.builder()
                 .path(path)
                 .indent(2)
                 .build();

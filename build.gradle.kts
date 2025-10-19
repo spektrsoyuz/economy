@@ -22,7 +22,7 @@ repositories {
 dependencies {
     implementation("com.zaxxer:HikariCP:7.0.1")
     implementation("redis.clients:jedis:6.1.0")
-    implementation("org.spongepowered:configurate-yaml:4.3.0-SNAPSHOT")
+    implementation("org.spongepowered:configurate-hocon:4.3.0-SNAPSHOT")
 
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly("net.milkbowl.vault:VaultUnlockedAPI:2.15")
