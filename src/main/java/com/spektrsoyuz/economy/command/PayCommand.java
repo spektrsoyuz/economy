@@ -7,7 +7,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.command.suggest.AccountSuggestionProvider;
-import com.spektrsoyuz.economy.model.account.Account;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import lombok.RequiredArgsConstructor;
@@ -48,61 +47,62 @@ public final class PayCommand {
      * @return success status
      */
     private int execute(final CommandContext<CommandSourceStack> ctx) {
-        final CommandSender sender = ctx.getSource().getSender();
+        final CommandSourceStack source = ctx.getSource();
+        final CommandSender sender = source.getSender();
 
-        // Check if sender is a player
+        // Check if sender is a player, and use an early return if not.
         if (!(sender instanceof Player player)) {
             sender.sendMessage(this.plugin.getConfigController().getMessage("error-sender-not-player"));
             return 0;
         }
 
-        final Optional<Account> optional = this.plugin.getAccountController().getAccount(player);
+        final String currencyName = this.plugin.getConfigController().getCurrencyConfig().getName();
+        final String currencyPlural = this.plugin.getConfigController().getCurrencyConfig().getNamePlural();
+        final String targetName = ctx.getArgument("name", String.class);
+        final int amount = ctx.getArgument("amount", Integer.class);
+        final BigDecimal amountBD = BigDecimal.valueOf(amount);
 
-        // Check if account exists
-        if (optional.isPresent()) {
-            final Account account = optional.get();
-            final String targetName = ctx.getArgument("name", String.class);
-            final Optional<Account> targetOptional = this.plugin.getAccountController().getAccount(targetName);
+        // Check if player account exists
+        return this.plugin.getAccountController().getAccount(player)
+                .flatMap(account -> {
+                    // Check if account balance is less than amount
+                    if (account.getBalance().compareTo(amountBD) < 0) {
+                        sender.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance",
+                                Placeholder.parsed("currency_plural", currencyPlural)));
+                        return Optional.empty();
+                    }
 
-            if (targetOptional.isPresent()) {
-                final Account targetAccount = targetOptional.get();
-                final int amount = ctx.getArgument("amount", Integer.class);
+                    // Check if target account exists
+                    return this.plugin.getAccountController().getAccount(targetName)
+                            .map(targetAccount -> {
+                                // Perform the transaction
+                                account.subtractBalance(amountBD);
+                                targetAccount.addBalance(amountBD);
 
-                // Check if account balance is less than amount
-                if (account.getBalance().compareTo(BigDecimal.valueOf(amount)) < 0) {
-                    sender.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance",
-                            Placeholder.parsed("currency_plural", this.plugin.getConfigController().getCurrencyConfig().getNamePlural())));
+                                // Send success messages to sender
+                                sender.sendMessage(this.plugin.getConfigController().getMessage("command-pay-send",
+                                        Placeholder.parsed("currency_name", currencyName),
+                                        Placeholder.parsed("amount", String.valueOf(amount)),
+                                        Placeholder.parsed("player", targetName)));
+
+                                // Send success message to target
+                                final Player targetPlayer = this.plugin.getServer().getPlayer(targetName);
+                                if (targetPlayer != null) {
+                                    targetPlayer.sendMessage(this.plugin.getConfigController().getMessage("command-pay-receive",
+                                            Placeholder.parsed("currency_name", currencyName),
+                                            Placeholder.parsed("amount", String.valueOf(amount)),
+                                            Placeholder.parsed("player", player.getName())));
+                                }
+
+                                return Command.SINGLE_SUCCESS;
+                            });
+                })
+                .orElseGet(() -> {
+                    // Check if transaction was successful
+                    if (this.plugin.getAccountController().getAccount(targetName).isEmpty()) {
+                        sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
+                    }
                     return 0;
-                }
-
-                account.subtractBalance(BigDecimal.valueOf(amount));
-                targetAccount.addBalance(BigDecimal.valueOf(amount));
-
-                // Send success messages
-                sender.sendMessage(this.plugin.getConfigController().getMessage("command-pay-send",
-                        Placeholder.parsed("currency_name", this.plugin.getConfigController().getCurrencyConfig().getName()),
-                        Placeholder.parsed("amount", String.valueOf(amount)),
-                        Placeholder.parsed("player", targetName)));
-
-                final Player targetPlayer = this.plugin.getServer().getPlayer(targetName);
-
-                if (targetPlayer != null) {
-                    targetPlayer.sendMessage(this.plugin.getConfigController().getMessage("command-pay-receive",
-                            Placeholder.parsed("currency_name", this.plugin.getConfigController().getCurrencyConfig().getName()),
-                            Placeholder.parsed("amount", String.valueOf(amount)),
-                            Placeholder.parsed("player", player.getName())));
-                }
-
-                return Command.SINGLE_SUCCESS;
-            } else {
-                // Account does not exist
-                sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
-                return 0;
-            }
-        } else {
-            // Account does not exist
-            sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
-            return 0;
-        }
+                });
     }
 }
