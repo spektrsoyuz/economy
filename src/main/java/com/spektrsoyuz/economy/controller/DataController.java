@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 public final class DataController {
 
     private final EconomyPlugin plugin;
+
     private HikariDataSource dataSource;
 
     /**

@@ -22,14 +22,9 @@ public final class EconomyPlugin extends JavaPlugin {
     private final DataController dataController = new DataController(this);
 
     @Override
-    public void onLoad() {
-        // Plugin load logic
-        this.configController.initialize();
-    }
-
-    @Override
     public void onEnable() {
         // Plugin startup logic
+        this.configController.initialize();
         this.dataController.initialize();
         this.accountController.initialize();
 

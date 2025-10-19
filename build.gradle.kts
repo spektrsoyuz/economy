@@ -3,8 +3,8 @@ import net.minecrell.pluginyml.paper.PaperPluginDescription
 
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "9.0.1"
-    id("io.freefair.lombok") version "8.14"
+    id("com.gradleup.shadow") version "9.0.2"
+    id("io.freefair.lombok") version "8.14.2"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     id("de.eldoria.plugin-yml.paper") version "0.7.1"
 }
@@ -26,8 +26,8 @@ dependencies {
 
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly("net.milkbowl.vault:VaultUnlockedAPI:2.15")
-    compileOnly("com.palmergames.bukkit.towny:towny:0.101.2.0")
-    compileOnly("io.github.miniplaceholders:miniplaceholders-api:2.3.0")
+    compileOnly("com.palmergames.bukkit.towny:towny:0.101.4.0")
+    compileOnly("io.github.miniplaceholders:miniplaceholders-api:3.0.1")
 }
 
 java {
