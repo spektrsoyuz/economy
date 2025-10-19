@@ -26,7 +26,7 @@ dependencies {
 
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly("net.milkbowl.vault:VaultUnlockedAPI:2.15")
-    compileOnly("com.palmergames.bukkit.towny:towny:0.101.4.0")
+    compileOnly("com.palmergames.bukkit.towny:towny:0.101.2.0")
     compileOnly("io.github.miniplaceholders:miniplaceholders-api:3.0.1")
 }
 
