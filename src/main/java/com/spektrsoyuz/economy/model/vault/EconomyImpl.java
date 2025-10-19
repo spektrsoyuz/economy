@@ -52,7 +52,7 @@ public final class EconomyImpl implements Economy {
     @Override
     public @NotNull String format(@NotNull BigDecimal amount) {
         return String.format("%s %s", amount,
-                amount.compareTo(BigDecimal.ONE) > 0
+                amount.compareTo(BigDecimal.ONE) != 0
                         ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
                         : this.plugin.getConfigController().getCurrencyConfig().getNameSingular());
     }

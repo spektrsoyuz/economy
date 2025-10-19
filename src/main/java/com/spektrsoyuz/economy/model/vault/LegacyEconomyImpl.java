@@ -48,7 +48,7 @@ public class LegacyEconomyImpl implements Economy {
 
     @Override
     public String format(double amount) {
-        return String.format("%s %s", amount, amount > 1
+        return String.format("%s %s", amount, amount != 1
                 ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
                 : this.plugin.getConfigController().getCurrencyConfig().getNameSingular());
     }
