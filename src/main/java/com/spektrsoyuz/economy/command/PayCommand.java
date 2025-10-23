@@ -23,11 +23,7 @@ public final class PayCommand {
 
     private final EconomyPlugin plugin;
 
-    /**
-     * Registers the command using the Paper Command API.
-     *
-     * @param registrar Paper Command API registrar
-     */
+    // Registers the command
     public void register(final Commands registrar) {
         final var command = Commands.literal("pay")
                 .requires(s -> s.getSender().hasPermission(EconomyUtils.PERMISSION_COMMAND_PAY))
@@ -40,12 +36,7 @@ public final class PayCommand {
         registrar.register(command, "Give currency to an account");
     }
 
-    /**
-     * Executes the command and returns the success status.
-     *
-     * @param ctx command context
-     * @return success status
-     */
+    // Executes the command
     private int execute(final CommandContext<CommandSourceStack> ctx) {
         final CommandSourceStack source = ctx.getSource();
         final CommandSender sender = source.getSender();

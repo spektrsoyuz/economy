@@ -23,11 +23,7 @@ public final class BalanceCommand {
 
     private final EconomyPlugin plugin;
 
-    /**
-     * Registers the command using the Paper Command API.
-     *
-     * @param registrar Paper Command API registrar
-     */
+    // Registers the command
     public void register(final Commands registrar) {
         final var command = Commands.literal("balance")
                 .requires(s -> s.getSender().hasPermission(EconomyUtils.PERMISSION_COMMAND_BALANCE))
@@ -41,12 +37,7 @@ public final class BalanceCommand {
         registrar.register(command, "View your account balance", List.of("bal", "money"));
     }
 
-    /**
-     * Executes the command for the sender and returns the success status.
-     *
-     * @param ctx command context
-     * @return success status
-     */
+    // Executes the command for a sender account
     private int executeSelf(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
 
@@ -65,12 +56,7 @@ public final class BalanceCommand {
                 });
     }
 
-    /**
-     * Executes the command for a target account and returns the success status.
-     *
-     * @param ctx command context
-     * @return success status
-     */
+    // Executes the command for a target account
     private int executeOther(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
         final String name = ctx.getArgument("name", String.class);
@@ -84,14 +70,7 @@ public final class BalanceCommand {
                 });
     }
 
-    /**
-     * Sends a result message to the sender
-     *
-     * @param sender  command sender
-     * @param account account used for the message
-     * @param key     message key
-     * @return success status
-     */
+    // Sends a result message to the sender
     private int sendMessage(final CommandSender sender, final Account account, final String key) {
         final String name = account.getName();
         final DecimalFormat format = new DecimalFormat("0.#");

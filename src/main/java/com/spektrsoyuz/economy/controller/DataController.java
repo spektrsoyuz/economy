@@ -28,9 +28,7 @@ public final class DataController {
 
     private HikariDataSource dataSource;
 
-    /**
-     * Initializes the controller.
-     */
+    // Initializes the controller
     public void initialize() {
         final HikariConfig hikariConfig = this.getHikariConfig();
 
@@ -47,11 +45,7 @@ public final class DataController {
         this.createAccountsTable();
     }
 
-    /**
-     * Constructs a HikariConfig object based on the storage configuration.
-     *
-     * @return A configured {@link HikariConfig} instance
-     */
+    // Asynchronously saves an account to the database
     private @NotNull HikariConfig getHikariConfig() {
         final HikariConfig hikariConfig = new HikariConfig();
         final StorageConfig storageConfig = this.plugin.getConfigController().getStorageConfig();
@@ -79,11 +73,7 @@ public final class DataController {
         return hikariConfig;
     }
 
-    /**
-     * Asynchronously saves an account to the database.
-     *
-     * @param account The {@link Account} to save
-     */
+    // Asynchronously saves an account to the database
     public void saveAccount(final Account account) {
         CompletableFuture.runAsync(() -> {
             try {
@@ -97,11 +87,7 @@ public final class DataController {
         });
     }
 
-    /**
-     * Asynchronously deletes an account from the database.
-     *
-     * @param id The {@link UUID} of the account to delete
-     */
+    // Asynchronously deletes an account from the database
     public void deleteAccount(final UUID id) {
         CompletableFuture.runAsync(() -> {
             try {
@@ -113,12 +99,7 @@ public final class DataController {
         });
     }
 
-    /**
-     * Asynchronously queries an account from the database by its unique ID.
-     *
-     * @param id The {@link UUID} of the account to query
-     * @return A {@link CompletableFuture} containing the found {@link Account}, or null if not found
-     */
+    // Asynchronously queries an account from the database by its unique ID
     public CompletableFuture<Account> queryAccount(final UUID id) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -132,12 +113,7 @@ public final class DataController {
         });
     }
 
-    /**
-     * Asynchronously queries an account from the database by its name.
-     *
-     * @param name The name of the account to query
-     * @return A {@link CompletableFuture} containing the found {@link Account}, or null if not found
-     */
+    // Asynchronously queries an account from the database by its name
     public CompletableFuture<Account> queryAccount(final String name) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -151,11 +127,7 @@ public final class DataController {
         });
     }
 
-    /**
-     * Asynchronously queries all accounts from the database.
-     *
-     * @return A {@link CompletableFuture} containing a {@link Set} of all accounts
-     */
+    // Asynchronously queries all accounts from the database
     public CompletableFuture<Set<Account>> queryAccounts() {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -168,13 +140,7 @@ public final class DataController {
         });
     }
 
-    /**
-     * Parses a {@link ResultSet} into a set of {@link Account} objects.
-     *
-     * @param resultSet The ResultSet from a database query
-     * @return A {@link Set} of parsed accounts
-     * @throws SQLException If a database access error occurs
-     */
+    // Parses a ResultSet into a set of Account objects
     private Set<Account> parseAccounts(final ResultSet resultSet) throws SQLException {
         final Set<Account> accounts = new HashSet<>();
         while (resultSet.next()) {
@@ -183,13 +149,7 @@ public final class DataController {
         return accounts;
     }
 
-    /**
-     * Parses the current row of a {@link ResultSet} into an {@link Account} object.
-     *
-     * @param resultSet The ResultSet to parse, positioned at the desired row
-     * @return The parsed {@link Account} object
-     * @throws SQLException If a database access error occurs
-     */
+    // Parses the current row of a ResultSet into an Account object
     private Account parseAccount(final ResultSet resultSet) throws SQLException {
         final UUID id = UUID.fromString(resultSet.getString("id"));
         final String name = resultSet.getString("name");
@@ -199,9 +159,7 @@ public final class DataController {
         return new Account(this.plugin, id, name, balance);
     }
 
-    /**
-     * Creates the 'accounts' table in the database if it does not already exist.
-     */
+    // Creates the 'accounts' table in the database if it does not already exist
     private void createAccountsTable() {
         try {
             this.executeUpdate("""
@@ -216,9 +174,7 @@ public final class DataController {
         }
     }
 
-    /**
-     * Closes the database connection.
-     */
+    // Closes the database connection
     public void close() {
         try {
             this.dataSource.close();
@@ -227,16 +183,7 @@ public final class DataController {
         }
     }
 
-    /**
-     * Executes a database query and maps the {@link ResultSet} to an object.
-     *
-     * @param <T>        The type of the object to be returned
-     * @param query      The SQL query to execute
-     * @param mapper     A function to transform the {@link ResultSet} into an object of type T
-     * @param parameters The parameters to be set in the {@link PreparedStatement}
-     * @return The object returned by the mapper function
-     * @throws SQLException If a database access error occurs
-     */
+    // Executes a database query and maps the ResultSet to an object
     private <T> @Nullable T executeQuery(final String query, final ThrowingFunction<ResultSet, T> mapper, final @Nullable Object... parameters) throws SQLException {
         try (final Connection connection = this.dataSource.getConnection()) {
             try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -252,13 +199,7 @@ public final class DataController {
         }
     }
 
-    /**
-     * Executes a data manipulation statement (e.g., INSERT, UPDATE, DELETE).
-     *
-     * @param query      The SQL statement to execute
-     * @param parameters The parameters to be set in the {@link PreparedStatement}
-     * @throws SQLException If a database access error occurs
-     */
+    // Executes a data manipulation statement (e.g., INSERT, UPDATE, DELETE)
     private void executeUpdate(final String query, final @Nullable Object... parameters) throws SQLException {
         try (final Connection connection = this.dataSource.getConnection()) {
             try (final PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -272,12 +213,7 @@ public final class DataController {
         }
     }
 
-    /**
-     * A functional interface for a function that can throw an {@link SQLException}.
-     *
-     * @param <T> The type of the input to the function.
-     * @param <R> The type of the result of the function.
-     */
+    // A functional interface for a function that can throw an SQLException
     @FunctionalInterface
     protected interface ThrowingFunction<T, R> {
         static <T, R> ThrowingFunction<T, R> unchecked(final ThrowingFunction<T, R> f) {

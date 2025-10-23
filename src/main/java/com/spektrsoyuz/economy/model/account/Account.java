@@ -16,14 +16,7 @@ public final class Account {
     private String name;
     private BigDecimal balance;
 
-    /**
-     * Constructor for an Account.
-     *
-     * @param plugin  Economy plugin instance
-     * @param id      Account uuid
-     * @param name    Account name
-     * @param balance Starting balance
-     */
+    // Constructor
     public Account(
             final EconomyPlugin plugin,
             final UUID id,
@@ -38,12 +31,7 @@ public final class Account {
         this.save();
     }
 
-    /**
-     * Sets the name of the account.
-     *
-     * @param name New name
-     * @return true if succeeded, false otherwise
-     */
+    // Sets the name of the account
     public boolean setName(final String name) {
         this.name = name;
 
@@ -51,12 +39,7 @@ public final class Account {
         return true;
     }
 
-    /**
-     * Adds to the account balance.
-     *
-     * @param amount Amount to add to the account
-     * @return true if successful, false otherwise
-     */
+    // Adds to the account balance
     public boolean addBalance(final BigDecimal amount) {
         this.balance = this.balance.add(amount);
 
@@ -64,12 +47,7 @@ public final class Account {
         return true;
     }
 
-    /**
-     * Subtracts from the account balance.
-     *
-     * @param amount Amount to subtract from the account
-     * @return true if successful, false otherwise
-     */
+    // Subtracts from the account balance
     public boolean subtractBalance(final BigDecimal amount) {
         this.balance = this.balance.subtract(amount);
 
@@ -77,9 +55,7 @@ public final class Account {
         return true;
     }
 
-    /**
-     * Saves the account state.
-     */
+    // Saves the account state
     private void save() {
         this.consumer.accept(this);
     }

@@ -28,9 +28,7 @@ public final class ConfigController {
     private CommentedConfigurationNode primaryConfig;
     private CommentedConfigurationNode messagesConfig;
 
-    /**
-     * Initializes the controller.
-     */
+    // Initializes the controller
     public void initialize() {
         this.primaryConfig = this.createNode("config.conf");
         this.messagesConfig = this.createNode("messages.conf");

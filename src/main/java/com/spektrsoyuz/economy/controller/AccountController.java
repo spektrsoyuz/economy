@@ -21,9 +21,7 @@ public final class AccountController {
     private final EconomyPlugin plugin;
     private final Map<UUID, Account> accounts = new ConcurrentHashMap<>();
 
-    /**
-     * Initializes the controller.
-     */
+    // Initializes the controller
     public void initialize() {
         this.plugin.getComponentLogger().info("Loading accounts into cache");
 
@@ -32,35 +30,17 @@ public final class AccountController {
         this.plugin.getComponentLogger().info("Loaded {} accounts into cache", this.accounts.size());
     }
 
-    /**
-     * Gets an account from the cache by its ID.
-     *
-     * @param id account ID
-     * @return an {@code Optional} containing the account if found,
-     * otherwise an empty {@code Optional}
-     */
+    // Gets an account from the cache by its ID
     public Optional<Account> getAccount(final UUID id) {
         return Optional.ofNullable(this.accounts.get(id));
     }
 
-    /**
-     * Gets an account from the cache using a Bukkit player.
-     *
-     * @param player Bukkit player
-     * @return an {@code Optional} containing the account if found,
-     * otherwise an empty {@code Optional}
-     */
+    // Gets an account from the cache using a Bukkit player
     public Optional<Account> getAccount(final Player player) {
         return this.getAccount(player.getUniqueId());
     }
 
-    /**
-     * Gets an Account from the cache by its name.
-     *
-     * @param name account name
-     * @return an {@code Optional} containing the account if found,
-     * otherwise an empty {@code Optional}
-     */
+    // Gets an Account from the cache by its name
     public Optional<Account> getAccount(final String name) {
         for (final Account account : this.accounts.values()) {
             if (account.getName().equals(name)) return Optional.of(account);
@@ -68,14 +48,7 @@ public final class AccountController {
         return Optional.empty();
     }
 
-    /**
-     * Creates a new account and adds it to the cache.
-     *
-     * @param id      account ID
-     * @param name    account name
-     * @param balance starting balance
-     * @return true if successful, otherwise false
-     */
+    // Creates a new account and adds it to the cache
     public boolean createAccount(final UUID id, final String name, final BigDecimal balance) {
         final Account account = new Account(this.plugin, id, name, balance);
 
@@ -83,12 +56,7 @@ public final class AccountController {
         return true;
     }
 
-    /**
-     * Deletes an account from the cache.
-     *
-     * @param id account ID to delete
-     * @return true if successful, otherwise false
-     */
+    // Deletes an account from the cache
     public boolean deleteAccount(final UUID id) {
         this.accounts.remove(id);
 
@@ -96,11 +64,7 @@ public final class AccountController {
         return true;
     }
 
-    /**
-     * Load all accounts into the cache from the database.
-     *
-     * @return A {@code CompletableFuture} with no result
-     */
+    // Load all accounts into the cache from the database
     private CompletableFuture<Void> loadAccounts() {
         return this.plugin.getDataController().queryAccounts().thenAccept(accounts -> {
             for (final Account account : accounts) {
@@ -109,13 +73,7 @@ public final class AccountController {
         });
     }
 
-    /**
-     * Sets the account name to a new name
-     *
-     * @param id   account ID
-     * @param name new account name
-     * @return true if successful, otherwise false
-     */
+    // Sets the account name to a new name
     public boolean renameAccount(final UUID id, final String name) {
         final Account account = this.accounts.get(id);
 

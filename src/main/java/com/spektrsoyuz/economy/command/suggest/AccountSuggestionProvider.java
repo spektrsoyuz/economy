@@ -16,13 +16,6 @@ public class AccountSuggestionProvider implements SuggestionProvider<CommandSour
 
     private final EconomyPlugin plugin;
 
-    /**
-     * Gets a {@code CompletableFuture} containing suggestions.
-     *
-     * @param ctx command context
-     * @param builder suggestions builder
-     * @return a {@code CompletableFuture} of suggestions
-     */
     @Override
     public CompletableFuture<Suggestions> getSuggestions(final CommandContext<CommandSourceStack> ctx, final SuggestionsBuilder builder) {
         this.plugin.getAccountController().getAccounts().values().stream()
