@@ -53,12 +53,18 @@ public final class PayCommand {
         final int amount = ctx.getArgument("amount", Integer.class);
         final BigDecimal amountBD = BigDecimal.valueOf(amount);
 
+        // Check if target is player
+        if (player.getName().equals(targetName)) {
+            player.sendMessage(this.plugin.getConfigController().getMessage("command-pay-self"));
+            return 0;
+        }
+
         // Check if player account exists
         return this.plugin.getAccountController().getAccount(player)
                 .flatMap(account -> {
                     // Check if account balance is less than amount
                     if (account.getBalance().compareTo(amountBD) < 0) {
-                        sender.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance",
+                        player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance",
                                 Placeholder.parsed("currency_plural", currencyPlural)));
                         return Optional.empty();
                     }
@@ -71,7 +77,7 @@ public final class PayCommand {
                                 targetAccount.addBalance(amountBD);
 
                                 // Send success messages to sender
-                                sender.sendMessage(this.plugin.getConfigController().getMessage("command-pay-send",
+                                player.sendMessage(this.plugin.getConfigController().getMessage("command-pay-send",
                                         Placeholder.parsed("currency_name", currencyName),
                                         Placeholder.parsed("amount", String.valueOf(amount)),
                                         Placeholder.parsed("player", targetName)));
@@ -91,7 +97,7 @@ public final class PayCommand {
                 .orElseGet(() -> {
                     // Check if transaction was successful
                     if (this.plugin.getAccountController().getAccount(targetName).isEmpty()) {
-                        sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
+                        player.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
                     }
                     return 0;
                 });
