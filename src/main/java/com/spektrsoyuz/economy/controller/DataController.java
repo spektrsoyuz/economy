@@ -105,7 +105,7 @@ public final class DataController {
     public void deleteAccount(final UUID id) {
         CompletableFuture.runAsync(() -> {
             try {
-                this.executeUpdate("DELETE * FROM accounts WHERE id = ?;",
+                this.executeUpdate("DELETE FROM accounts WHERE id = ?;",
                         id.toString());
             } catch (final SQLException e) {
                 this.plugin.getComponentLogger().error("Error deleting account '{}'", id, e);
