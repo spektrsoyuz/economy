@@ -39,6 +39,14 @@ public final class Account {
         return true;
     }
 
+    // Sets the account balance
+    public boolean setBalance(final BigDecimal balance) {
+        this.balance = balance;
+
+        this.save();
+        return true;
+    }
+
     // Adds to the account balance
     public boolean addBalance(final BigDecimal amount) {
         this.balance = this.balance.add(amount);

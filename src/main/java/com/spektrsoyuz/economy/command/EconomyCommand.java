@@ -31,6 +31,11 @@ public final class EconomyCommand {
                                 .suggests(new AccountSuggestionProvider(this.plugin))
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                         .executes(this::executeAdd))))
+                .then(Commands.literal("set")
+                        .then(Commands.argument("name", StringArgumentType.word())
+                                .suggests(new AccountSuggestionProvider(this.plugin))
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                        .executes(this::executeSet))))
                 .then(Commands.literal("subtract")
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .suggests(new AccountSuggestionProvider(this.plugin))
@@ -56,6 +61,37 @@ public final class EconomyCommand {
 
             // Send success messages to sender
             sender.sendMessage(this.plugin.getConfigController().getMessage("command-economy-add",
+                    Placeholder.parsed("name", accountName),
+                    Placeholder.parsed("symbol", this.plugin.getConfigController().getCurrencyConfig().getSymbol()),
+                    Placeholder.parsed("amount", String.valueOf(amount)),
+                    Placeholder.parsed("currency", EconomyUtils.format(this.plugin, account.getBalance()))));
+
+            return Command.SINGLE_SUCCESS;
+        }).orElseGet(() -> {
+
+            // Check if transaction was successful
+            if (this.plugin.getAccountController().getAccount(accountName).isEmpty()) {
+                sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
+            }
+            return 0;
+        });
+    }
+
+    // Executes the 'set' sub-command
+    private int executeSet(final CommandContext<CommandSourceStack> ctx) {
+        final CommandSender sender = ctx.getSource().getSender();
+
+        final String accountName = ctx.getArgument("name", String.class);
+        final int amount = ctx.getArgument("amount", Integer.class);
+        final BigDecimal amountBD = BigDecimal.valueOf(amount);
+
+        // Check if target account exists
+        return this.plugin.getAccountController().getAccount(accountName).map(account -> {
+            // Perform the transaction
+            account.setBalance(amountBD);
+
+            // Send success messages to sender
+            sender.sendMessage(this.plugin.getConfigController().getMessage("command-economy-set",
                     Placeholder.parsed("name", accountName),
                     Placeholder.parsed("symbol", this.plugin.getConfigController().getCurrencyConfig().getSymbol()),
                     Placeholder.parsed("amount", String.valueOf(amount)),
