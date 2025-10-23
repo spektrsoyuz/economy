@@ -47,7 +47,6 @@ public final class PayCommand {
             return 0;
         }
 
-        final String currencyName = this.plugin.getConfigController().getCurrencyConfig().getName();
         final String currencyPlural = this.plugin.getConfigController().getCurrencyConfig().getNamePlural();
         final String targetName = ctx.getArgument("name", String.class);
         final int amount = ctx.getArgument("amount", Integer.class);
@@ -65,7 +64,7 @@ public final class PayCommand {
                     // Check if account balance is less than amount
                     if (account.getBalance().compareTo(amountBD) < 0) {
                         player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance",
-                                Placeholder.parsed("currency_plural", currencyPlural)));
+                                Placeholder.parsed("currency", currencyPlural)));
                         return Optional.empty();
                     }
 
@@ -76,19 +75,24 @@ public final class PayCommand {
                                 account.subtractBalance(amountBD);
                                 targetAccount.addBalance(amountBD);
 
+                                final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
+                                final String currency = EconomyUtils.format(this.plugin, amountBD);
+
                                 // Send success messages to sender
                                 player.sendMessage(this.plugin.getConfigController().getMessage("command-pay-send",
-                                        Placeholder.parsed("currency_name", currencyName),
+                                        Placeholder.parsed("name", account.getName()),
+                                        Placeholder.parsed("symbol", symbol),
                                         Placeholder.parsed("amount", String.valueOf(amount)),
-                                        Placeholder.parsed("player", targetName)));
+                                        Placeholder.parsed("currency", currency)));
 
                                 // Send success message to target
                                 final Player targetPlayer = this.plugin.getServer().getPlayer(targetName);
                                 if (targetPlayer != null) {
                                     targetPlayer.sendMessage(this.plugin.getConfigController().getMessage("command-pay-receive",
-                                            Placeholder.parsed("currency_name", currencyName),
+                                            Placeholder.parsed("name", player.getName()),
+                                            Placeholder.parsed("symbol", symbol),
                                             Placeholder.parsed("amount", String.valueOf(amount)),
-                                            Placeholder.parsed("player", player.getName())));
+                                            Placeholder.parsed("currency", currency)));
                                 }
 
                                 return Command.SINGLE_SUCCESS;

@@ -27,7 +27,6 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
     compileOnly("net.milkbowl.vault:VaultUnlockedAPI:2.15")
     compileOnly("com.palmergames.bukkit.towny:towny:0.101.2.0")
-    compileOnly("io.github.miniplaceholders:miniplaceholders-api:3.0.1")
 }
 
 java {
@@ -46,6 +45,7 @@ tasks {
 paper {
     name = "economy"
     main = "com.spektrsoyuz.economy.EconomyPlugin"
+    version = project.version.toString()
     apiVersion = "1.21.8"
     website = "https://spektrsoyuz.com"
     authors = listOf("SpektrSoyuz")
@@ -53,11 +53,6 @@ paper {
 
     serverDependencies {
         register("Vault") {
-            load = PaperPluginDescription.RelativeLoadOrder.BEFORE
-            required = false
-            joinClasspath = true
-        }
-        register("MiniPlaceholders") {
             load = PaperPluginDescription.RelativeLoadOrder.BEFORE
             required = false
             joinClasspath = true
@@ -71,12 +66,14 @@ paper {
 
     permissions {
         register("economy.balance")
+        register("economy.pay")
 
         register("economy.*") {
             this.description = "Grants access to all commands"
             this.default = BukkitPluginDescription.Permission.Default.OP
             this.children = listOf(
                 "economy.balance",
+                "economy.pay",
             )
         }
     }

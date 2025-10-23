@@ -74,19 +74,15 @@ public final class BalanceCommand {
     private int sendMessage(final CommandSender sender, final Account account, final String key) {
         final String name = account.getName();
         final DecimalFormat format = new DecimalFormat("0.#");
-        final String balance = format.format(account.getBalance().doubleValue());
-
         final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
-        final String currencyFormat = account.getBalance().doubleValue() > 1
-                ? this.plugin.getConfigController().getCurrencyConfig().getNamePlural()
-                : this.plugin.getConfigController().getCurrencyConfig().getNameSingular();
+        final String balance = format.format(account.getBalance().doubleValue());
 
         // Send message to the sender
         sender.sendMessage(this.plugin.getConfigController().getMessage(key,
                 Placeholder.parsed("name", name),
                 Placeholder.parsed("symbol", symbol),
                 Placeholder.parsed("amount", balance),
-                Placeholder.parsed("currency", currencyFormat)));
+                Placeholder.parsed("currency", EconomyUtils.format(this.plugin, account.getBalance()))));
 
         return Command.SINGLE_SUCCESS;
     }
