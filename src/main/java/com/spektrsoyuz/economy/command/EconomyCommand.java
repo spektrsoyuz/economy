@@ -31,6 +31,10 @@ public final class EconomyCommand {
                                 .suggests(new AccountSuggestionProvider(this.plugin))
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                         .executes(this::executeAdd))))
+                .then(Commands.literal("reset")
+                        .then(Commands.argument("name", StringArgumentType.word())
+                                .suggests(new AccountSuggestionProvider(this.plugin))
+                                .executes(this::executeReset)))
                 .then(Commands.literal("set")
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .suggests(new AccountSuggestionProvider(this.plugin))
@@ -77,6 +81,34 @@ public final class EconomyCommand {
         });
     }
 
+    // Executes the 'reset' sub-command
+    private int executeReset(final CommandContext<CommandSourceStack> ctx) {
+        final CommandSender sender = ctx.getSource().getSender();
+
+        final String accountName = ctx.getArgument("name", String.class);
+
+        // Check if target account exists
+        return this.plugin.getAccountController().getAccount(accountName).map(account -> {
+            // Perform the transaction
+            account.setBalance(BigDecimal.ZERO);
+
+            // Send success messages to sender
+            sender.sendMessage(this.plugin.getConfigController().getMessage("command-economy-reset",
+                    Placeholder.parsed("name", accountName),
+                    Placeholder.parsed("symbol", this.plugin.getConfigController().getCurrencyConfig().getSymbol()),
+                    Placeholder.parsed("amount", String.valueOf(BigDecimal.ZERO)),
+                    Placeholder.parsed("currency", EconomyUtils.format(this.plugin, account.getBalance()))));
+
+            return Command.SINGLE_SUCCESS;
+        }).orElseGet(() -> {
+            // Check if transaction was successful
+            if (this.plugin.getAccountController().getAccount(accountName).isEmpty()) {
+                sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
+            }
+            return 0;
+        });
+    }
+
     // Executes the 'set' sub-command
     private int executeSet(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
@@ -99,7 +131,6 @@ public final class EconomyCommand {
 
             return Command.SINGLE_SUCCESS;
         }).orElseGet(() -> {
-
             // Check if transaction was successful
             if (this.plugin.getAccountController().getAccount(accountName).isEmpty()) {
                 sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
@@ -130,7 +161,6 @@ public final class EconomyCommand {
 
             return Command.SINGLE_SUCCESS;
         }).orElseGet(() -> {
-
             // Check if transaction was successful
             if (this.plugin.getAccountController().getAccount(accountName).isEmpty()) {
                 sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
