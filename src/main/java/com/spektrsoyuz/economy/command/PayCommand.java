@@ -2,12 +2,10 @@ package com.spektrsoyuz.economy.command;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
-import com.spektrsoyuz.economy.command.suggest.AccountSuggestionProvider;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
@@ -30,7 +28,7 @@ public final class PayCommand {
     public void register(final Commands registrar) {
         final var command = Commands.literal("pay")
                 .requires(s -> s.getSender().hasPermission(EconomyUtils.PERMISSION_COMMAND_PAY))
-                .then(Commands.argument("name", ArgumentTypes.player())
+                .then(Commands.argument("player", ArgumentTypes.player())
                         .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                 .executes(this::execute)))
                 .build();
