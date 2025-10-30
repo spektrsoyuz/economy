@@ -3,10 +3,10 @@ import net.minecrell.pluginyml.paper.PaperPluginDescription
 
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "9.0.2"
-    id("io.freefair.lombok") version "8.14.2"
-    id("xyz.jpenilla.run-paper") version "2.3.1"
-    id("de.eldoria.plugin-yml.paper") version "0.7.1"
+    id("com.gradleup.shadow") version "9.2.2"
+    id("io.freefair.lombok") version "9.0.0"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
+    id("de.eldoria.plugin-yml.paper") version "0.8.0"
 }
 
 group = "com.spektrsoyuz"
@@ -34,18 +34,22 @@ java {
 }
 
 tasks {
-    shadowJar {
-        archiveClassifier.set("")
-    }
     build {
         dependsOn(shadowJar)
+    }
+    runServer {
+        minecraftVersion("1.21.8")
+    }
+    shadowJar {
+        archiveClassifier.set("")
     }
 }
 
 paper {
     name = "economy"
-    main = "com.spektrsoyuz.economy.EconomyPlugin"
     version = project.version.toString()
+    main = "com.spektrsoyuz.economy.EconomyPlugin"
+    description = ""
     apiVersion = "1.21.8"
     website = "https://spektrsoyuz.com"
     authors = listOf("SpektrSoyuz")
@@ -65,6 +69,8 @@ paper {
     }
 
     permissions {
+        register("economy.admin")
+        register("economy.balance.other")
         register("economy.balance")
         register("economy.pay")
 
@@ -72,6 +78,8 @@ paper {
             this.description = "Grants access to all commands"
             this.default = BukkitPluginDescription.Permission.Default.OP
             this.children = listOf(
+                "economy.admin",
+                "economy.balance.other",
                 "economy.balance",
                 "economy.pay",
             )
