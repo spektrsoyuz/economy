@@ -5,7 +5,6 @@ plugins {
     id("java")
     id("com.gradleup.shadow") version "9.2.2"
     id("io.freefair.lombok") version "9.0.0"
-    id("xyz.jpenilla.run-paper") version "3.0.2"
     id("de.eldoria.plugin-yml.paper") version "0.8.0"
 }
 
@@ -36,9 +35,6 @@ java {
 tasks {
     build {
         dependsOn(shadowJar)
-    }
-    runServer {
-        minecraftVersion("1.21.8")
     }
     shadowJar {
         archiveClassifier.set("")
