@@ -4,11 +4,14 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.command.suggest.AccountSuggestionProvider;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
@@ -27,8 +30,7 @@ public final class PayCommand {
     public void register(final Commands registrar) {
         final var command = Commands.literal("pay")
                 .requires(s -> s.getSender().hasPermission(EconomyUtils.PERMISSION_COMMAND_PAY))
-                .then(Commands.argument("name", StringArgumentType.word())
-                        .suggests(new AccountSuggestionProvider(this.plugin))
+                .then(Commands.argument("name", ArgumentTypes.player())
                         .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                 .executes(this::execute)))
                 .build();
@@ -37,23 +39,24 @@ public final class PayCommand {
     }
 
     // Executes the command
-    private int execute(final CommandContext<CommandSourceStack> ctx) {
+    private int execute(final CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         final CommandSourceStack source = ctx.getSource();
         final CommandSender sender = source.getSender();
 
-        // Check if sender is a player, and use an early return if not.
+        // Check if sender is a player
         if (!(sender instanceof Player player)) {
             sender.sendMessage(this.plugin.getConfigController().getMessage("error-sender-not-player"));
             return 0;
         }
 
         final String currencyPlural = this.plugin.getConfigController().getCurrencyConfig().getNamePlural();
-        final String targetName = ctx.getArgument("name", String.class);
+        final PlayerSelectorArgumentResolver targetResolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+        final Player targetPlayer = targetResolver.resolve(ctx.getSource()).getFirst();
         final int amount = ctx.getArgument("amount", Integer.class);
         final BigDecimal amountBD = BigDecimal.valueOf(amount);
 
         // Check if target is player
-        if (player.getName().equals(targetName)) {
+        if (player.getName().equals(targetPlayer.getName())) {
             player.sendMessage(this.plugin.getConfigController().getMessage("command-pay-self"));
             return 0;
         }
@@ -69,7 +72,7 @@ public final class PayCommand {
                     }
 
                     // Check if target account exists
-                    return this.plugin.getAccountController().getAccount(targetName)
+                    return this.plugin.getAccountController().getAccount(targetPlayer)
                             .map(targetAccount -> {
                                 // Perform the transaction
                                 account.subtractBalance(amountBD);
@@ -86,21 +89,18 @@ public final class PayCommand {
                                         Placeholder.parsed("currency", currency)));
 
                                 // Send success message to target
-                                final Player targetPlayer = this.plugin.getServer().getPlayer(targetName);
-                                if (targetPlayer != null) {
-                                    targetPlayer.sendMessage(this.plugin.getConfigController().getMessage("command-pay-receive",
-                                            Placeholder.parsed("name", player.getName()),
-                                            Placeholder.parsed("symbol", symbol),
-                                            Placeholder.parsed("amount", String.valueOf(amount)),
-                                            Placeholder.parsed("currency", currency)));
-                                }
+                                targetPlayer.sendMessage(this.plugin.getConfigController().getMessage("command-pay-receive",
+                                        Placeholder.parsed("name", player.getName()),
+                                        Placeholder.parsed("symbol", symbol),
+                                        Placeholder.parsed("amount", String.valueOf(amount)),
+                                        Placeholder.parsed("currency", currency)));
 
                                 return Command.SINGLE_SUCCESS;
                             });
                 })
                 .orElseGet(() -> {
                     // Check if transaction was successful
-                    if (this.plugin.getAccountController().getAccount(targetName).isEmpty()) {
+                    if (this.plugin.getAccountController().getAccount(targetPlayer).isEmpty()) {
                         player.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found"));
                     }
                     return 0;
