@@ -58,6 +58,14 @@ public final class AccountController {
         return this.getPlayerAccount(player.getUniqueId());
     }
 
+    // Gets a player account from the cache by its name
+    public Optional<Account> getPlayerAccount(final String name) {
+        for (final Account account : this.onlineAccounts.values()) {
+            if (account.getName().equals(name)) return Optional.of(account);
+        }
+        return Optional.empty();
+    }
+
     // Creates a new account and adds it to the cache
     public Account createAccount(final UUID id, final String name) {
         final BigDecimal balance = BigDecimal.valueOf(this.plugin.getConfigController().getCurrencyConfig().getStartingBalance());
