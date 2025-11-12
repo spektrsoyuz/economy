@@ -1,6 +1,7 @@
 package com.spektrsoyuz.economy.model;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -19,17 +20,18 @@ public final class Account {
     private boolean frozen;
 
     // Constructor
+    @Builder
     public Account(
             final EconomyPlugin plugin,
             final UUID id,
             final String name,
             final BigDecimal balance,
-            final boolean frozen
+            final Boolean frozen
     ) {
         this.id = id;
         this.name = name;
         this.balance = balance;
-        this.frozen = frozen;
+        this.frozen = frozen != null && frozen;
 
         this.accountConsumer = plugin.getAccountQueueTask()::queue;
         this.transactionConsumer = plugin.getTransactionQueueTask()::queue;

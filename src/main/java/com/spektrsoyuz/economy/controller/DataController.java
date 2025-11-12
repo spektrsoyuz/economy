@@ -280,7 +280,13 @@ public final class DataController {
         final boolean frozen = resultSet.getBoolean("frozen");
 
         // Create a new account
-        return new Account(this.plugin, id, name, balance, frozen);
+        return Account.builder()
+                .plugin(this.plugin)
+                .id(id)
+                .name(name)
+                .balance(balance)
+                .frozen(frozen)
+                .build();
     }
 
     // Creates the 'accounts' table in the database if it does not already exist
