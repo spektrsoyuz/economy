@@ -4,6 +4,7 @@ import com.spektrsoyuz.economy.EconomyPlugin;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -14,8 +15,8 @@ public final class Account {
     private final UUID id;
     private final Consumer<Account> accountConsumer;
     private final Consumer<Transaction> transactionConsumer;
+    private final Map<String, BigDecimal> balances;
     private String name;
-    private BigDecimal balance;
     private boolean frozen;
 
     // Constructor
@@ -23,12 +24,12 @@ public final class Account {
             final EconomyPlugin plugin,
             final UUID id,
             final String name,
-            final BigDecimal balance,
+            final Map<String, BigDecimal> balances,
             final boolean frozen
     ) {
         this.id = id;
         this.name = name;
-        this.balance = balance;
+        this.balances = balances;
         this.frozen = frozen;
 
         this.accountConsumer = plugin.getAccountQueueTask()::queue;
@@ -44,34 +45,44 @@ public final class Account {
         return true;
     }
 
+    // Gets the account balance
+    public BigDecimal getBalance(final String currency) {
+        return this.balances.getOrDefault(currency, BigDecimal.ZERO);
+    }
+
     // Adds to the account balance
-    public boolean addBalance(final BigDecimal amount, final Transactor transactor) {
+    public boolean addBalance(final String currency, final BigDecimal amount, final Transactor transactor) {
         if (this.frozen) return false;
-        this.balance = this.balance.add(amount);
+
+        final BigDecimal current = this.getBalance(currency);
+        this.balances.put(currency, current.add(amount));
 
         this.saveAccount();
-        this.saveTransaction(amount, transactor);
+        this.saveTransaction(currency, amount, transactor);
         return true;
     }
 
     // Sets the account balance
-    public boolean setBalance(final BigDecimal balance, final Transactor transactor) {
+    public boolean setBalance(final String currency, final BigDecimal balance, final Transactor transactor) {
         if (this.frozen) return false;
-        final BigDecimal current = this.balance;
-        this.balance = balance;
+
+        final BigDecimal current = this.getBalance(currency);
+        this.balances.put(currency, balance);
 
         this.saveAccount();
-        this.saveTransaction(balance.subtract(current), transactor);
+        this.saveTransaction(currency, balance.subtract(current), transactor);
         return true;
     }
 
     // Subtracts from the account balance
-    public boolean subtractBalance(final BigDecimal amount, final Transactor transactor) {
+    public boolean subtractBalance(final String currency, final BigDecimal amount, final Transactor transactor) {
         if (this.frozen) return false;
-        this.balance = this.balance.subtract(amount);
+
+        final BigDecimal current = getBalance(currency);
+        this.balances.put(currency, current.subtract(amount));
 
         this.saveAccount();
-        this.saveTransaction(amount, transactor);
+        this.saveTransaction(currency, amount, transactor);
         return true;
     }
 
@@ -102,8 +113,37 @@ public final class Account {
     }
 
     // Saves a transaction
-    private void saveTransaction(final BigDecimal amount, final Transactor transactor) {
-        final Transaction transaction = new Transaction(this.id, this.name, amount, transactor);
+    private void saveTransaction(final String currency, final BigDecimal amount, final Transactor transactor) {
+        final Transaction transaction = new Transaction(this.id, this.name, currency, amount, transactor);
         this.transactionConsumer.accept(transaction);
+    }
+
+    // Creates a Memento pattern
+    public Memento createMemento() {
+        return new Memento(
+                this.id,
+                this.name,
+                this.balances,
+                this.frozen
+        );
+    }
+
+    // Memento pattern for an account
+    public record Memento(
+            UUID id,
+            String name,
+            Map<String, BigDecimal> balances,
+            boolean frozen
+    ) {
+        // Creates an Account from a Memento pattern
+        public Account toAccount(final EconomyPlugin plugin) {
+            return new Account(
+                    plugin,
+                    id,
+                    name,
+                    balances,
+                    frozen
+            );
+        }
     }
 }
