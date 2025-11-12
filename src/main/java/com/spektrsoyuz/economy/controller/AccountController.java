@@ -2,7 +2,6 @@ package com.spektrsoyuz.economy.controller;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.Account;
-import com.spektrsoyuz.economy.model.config.Currency;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
@@ -69,16 +68,8 @@ public final class AccountController {
 
     // Creates a new account and adds it to the cache
     public Account createAccount(final UUID id, final String name) {
-        final Map<String, BigDecimal> balances = new HashMap<>();
-        final List<Currency> currencies = this.plugin.getConfigController().getCurrencyList();
-
-        // Set starting balance of account
-        for (final Currency currency : currencies) {
-            balances.put(currency.getName(), BigDecimal.valueOf(currency.getStartingBalance()));
-        }
-
-        // Create new account
-        final Account account = new Account(this.plugin, id, name, balances, false);
+        final double balance = this.plugin.getConfigController().getCurrencyConfig().getStartingBalance();
+        final Account account = new Account(this.plugin, id, name, BigDecimal.valueOf(balance), false);
 
         this.accounts.put(id, account);
         return account;

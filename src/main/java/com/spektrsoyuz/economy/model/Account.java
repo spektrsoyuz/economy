@@ -4,7 +4,6 @@ import com.spektrsoyuz.economy.EconomyPlugin;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -15,7 +14,7 @@ public final class Account {
     private final UUID id;
     private final Consumer<Account> accountConsumer;
     private final Consumer<Transaction> transactionConsumer;
-    private final Map<String, BigDecimal> balances;
+    private BigDecimal balance;
     private String name;
     private boolean frozen;
 
@@ -24,16 +23,40 @@ public final class Account {
             final EconomyPlugin plugin,
             final UUID id,
             final String name,
-            final Map<String, BigDecimal> balances,
+            final BigDecimal balance,
             final boolean frozen
     ) {
         this.id = id;
         this.name = name;
-        this.balances = balances;
+        this.balance = balance;
         this.frozen = frozen;
 
         this.accountConsumer = plugin.getAccountQueueTask()::queue;
         this.transactionConsumer = plugin.getTransactionQueueTask()::queue;
+    }
+
+    // Gets the formatted name of the account
+    public String getFormattedName() {
+        // Tax account
+        if (this.name.equals("tax")) {
+            return "Server (tax)";
+        }
+
+        // Town account
+        if (this.name.startsWith("town-")) {
+            return this.name
+                    .replaceFirst("town-", "")
+                    .replace("_", " ");
+        }
+
+        // Nation account
+        if (this.name.startsWith("nation-")) {
+            return this.name
+                    .replaceFirst("nation-", "")
+                    .replace("_", " ");
+        }
+
+        return this.name;
     }
 
     // Sets the account name
@@ -45,44 +68,34 @@ public final class Account {
         return true;
     }
 
-    // Gets the account balance
-    public BigDecimal getBalance(final String currency) {
-        return this.balances.getOrDefault(currency, BigDecimal.ZERO);
-    }
-
     // Adds to the account balance
-    public boolean addBalance(final String currency, final BigDecimal amount, final Transactor transactor) {
+    public boolean addBalance(final BigDecimal amount, final Transactor transactor) {
         if (this.frozen) return false;
-
-        final BigDecimal current = this.getBalance(currency);
-        this.balances.put(currency, current.add(amount));
+        this.balance = this.balance.add(amount);
 
         this.saveAccount();
-        this.saveTransaction(currency, amount, transactor);
+        this.saveTransaction(amount, transactor);
         return true;
     }
 
     // Sets the account balance
-    public boolean setBalance(final String currency, final BigDecimal balance, final Transactor transactor) {
+    public boolean setBalance(final BigDecimal balance, final Transactor transactor) {
         if (this.frozen) return false;
-
-        final BigDecimal current = this.getBalance(currency);
-        this.balances.put(currency, balance);
+        final BigDecimal current = this.balance;
+        this.balance = balance;
 
         this.saveAccount();
-        this.saveTransaction(currency, balance.subtract(current), transactor);
+        this.saveTransaction(balance.subtract(current), transactor);
         return true;
     }
 
     // Subtracts from the account balance
-    public boolean subtractBalance(final String currency, final BigDecimal amount, final Transactor transactor) {
+    public boolean subtractBalance(final BigDecimal amount, final Transactor transactor) {
         if (this.frozen) return false;
-
-        final BigDecimal current = getBalance(currency);
-        this.balances.put(currency, current.subtract(amount));
+        this.balance = this.balance.subtract(amount);
 
         this.saveAccount();
-        this.saveTransaction(currency, amount, transactor);
+        this.saveTransaction(amount, transactor);
         return true;
     }
 
@@ -113,8 +126,8 @@ public final class Account {
     }
 
     // Saves a transaction
-    private void saveTransaction(final String currency, final BigDecimal amount, final Transactor transactor) {
-        final Transaction transaction = new Transaction(this.id, this.name, currency, amount, transactor);
+    private void saveTransaction(final BigDecimal amount, final Transactor transactor) {
+        final Transaction transaction = new Transaction(this.id, this.name, amount, transactor);
         this.transactionConsumer.accept(transaction);
     }
 
@@ -123,7 +136,7 @@ public final class Account {
         return new Memento(
                 this.id,
                 this.name,
-                this.balances,
+                this.balance,
                 this.frozen
         );
     }
@@ -132,7 +145,7 @@ public final class Account {
     public record Memento(
             UUID id,
             String name,
-            Map<String, BigDecimal> balances,
+            BigDecimal balance,
             boolean frozen
     ) {
         // Creates an Account from a Memento pattern
@@ -141,7 +154,7 @@ public final class Account {
                     plugin,
                     id,
                     name,
-                    balances,
+                    balance,
                     frozen
             );
         }

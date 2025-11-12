@@ -1,7 +1,5 @@
 package com.spektrsoyuz.economy.controller;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.Account;
 import com.spektrsoyuz.economy.model.Transaction;
@@ -14,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,7 +27,6 @@ public final class DataController {
     private final EconomyPlugin plugin;
 
     private HikariDataSource dataSource;
-    private Gson gson;
 
     // SQL statements
     private String sqlSaveAccount;
@@ -46,7 +42,6 @@ public final class DataController {
 
     // Initializes the controller
     public void initialize() {
-        this.gson = new Gson();
         final StorageConfig storageConfig = this.plugin.getConfigController().getStorageConfig();
         final OptionsConfig optionsConfig = this.plugin.getConfigController().getOptionsConfig();
         final HikariConfig hikariConfig = this.getHikariConfig(storageConfig);
@@ -158,11 +153,9 @@ public final class DataController {
     public void saveAccount(final Account account) {
         CompletableFuture.runAsync(() -> {
             try {
-                final String balancesJson = this.gson.toJson(account.getBalances());
-
                 this.executeUpdate(this.sqlSaveAccount,
-                        account.getId().toString(), account.getName(), balancesJson, account.isFrozen(),
-                        account.getName(), balancesJson, account.isFrozen()
+                        account.getId().toString(), account.getName(), account.getBalance(), account.isFrozen(),
+                        account.getName(), account.getBalance(), account.isFrozen()
                 );
             } catch (final SQLException e) {
                 this.plugin.getComponentLogger().error("Error saving account '{}'", account.getId(), e);
@@ -283,36 +276,11 @@ public final class DataController {
     private Account parseAccount(final ResultSet resultSet) throws SQLException {
         final UUID id = UUID.fromString(resultSet.getString("id"));
         final String name = resultSet.getString("name");
-        final String balancesJson = resultSet.getString("balances");
+        final BigDecimal balance = resultSet.getBigDecimal("balance");
         final boolean frozen = resultSet.getBoolean("frozen");
 
-        final Type balancesType = new TypeToken<Map<String, BigDecimal>>() {
-        }.getType();
-        Map<String, BigDecimal> balances = this.gson.fromJson(balancesJson, balancesType);
-
-        if (balances == null) {
-            // Stored JSON is null or empty
-            balances = new HashMap<>();
-        }
-
-        final Map<String, BigDecimal> newBalances = new HashMap<>();
-        final Set<String> validCurrencyNames = this.plugin.getConfigController().getCurrencyNames();
-
-        // Handle currency database migration
-        for (Map.Entry<String, BigDecimal> entry : balances.entrySet()) {
-            if (validCurrencyNames.contains(entry.getKey())) {
-                newBalances.put(entry.getKey(), entry.getValue());
-            } else {
-                // Remove orphaned data
-                this.plugin.getComponentLogger().warn(
-                        "Orphaned balance found for account '{}': {} {}. This data will be discarded.",
-                        id, entry.getValue(), entry.getKey()
-                );
-            }
-        }
-
         // Create a new account
-        return new Account(this.plugin, id, name, newBalances, frozen);
+        return new Account(this.plugin, id, name, balance, frozen);
     }
 
     // Creates the 'accounts' table in the database if it does not already exist

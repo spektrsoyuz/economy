@@ -4,8 +4,6 @@ import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
 import com.spektrsoyuz.economy.listener.PlayerListener;
-import com.spektrsoyuz.economy.model.vault.EconomyImpl;
-import com.spektrsoyuz.economy.model.vault.LegacyEconomyImpl;
 import com.spektrsoyuz.economy.task.AccountQueueTask;
 import com.spektrsoyuz.economy.task.TransactionQueueTask;
 import io.papermc.paper.command.brigadier.Commands;
@@ -55,8 +53,8 @@ public final class EconomyPlugin extends JavaPlugin {
         this.registerTasks();
 
         // Register economy
-        new EconomyImpl(this).register();
-        new LegacyEconomyImpl(this).register();
+        //new EconomyImpl(this).register();
+        //new LegacyEconomyImpl(this).register();
 
         // Verify economy registration
         if (this.getServer().getServicesManager().load(Economy.class) == null) {

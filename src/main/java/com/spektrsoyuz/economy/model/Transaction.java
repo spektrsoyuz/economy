@@ -7,7 +7,6 @@ import java.util.UUID;
 public record Transaction(
         UUID accountId,
         String accountName,
-        String currency,
         BigDecimal amount,
         Transactor transactor
 ) {

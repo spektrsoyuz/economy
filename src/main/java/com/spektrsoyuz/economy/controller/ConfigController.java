@@ -2,7 +2,7 @@ package com.spektrsoyuz.economy.controller;
 
 import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
-import com.spektrsoyuz.economy.model.config.Currency;
+import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import com.spektrsoyuz.economy.model.config.OptionsConfig;
 import com.spektrsoyuz.economy.model.config.StorageConfig;
 import io.github.miniplaceholders.api.MiniPlaceholders;
@@ -23,28 +23,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 // Controller class for plugin configuration
 @RequiredArgsConstructor
 public final class ConfigController {
 
     private final EconomyPlugin plugin;
-    private final Map<String, Currency> currencies = new ConcurrentHashMap<>();
 
     private CommentedConfigurationNode primaryConfig;
-    private CommentedConfigurationNode currenciesConfig;
     private CommentedConfigurationNode messagesConfig;
 
     // Initializes the controller
     public boolean initialize() {
         this.primaryConfig = this.createNode(Constants.CONFIG_PRIMARY);
-        this.currenciesConfig = this.createNode(Constants.CONFIG_CURRENCIES);
         this.messagesConfig = this.createNode(Constants.CONFIG_MESSAGES);
-
-        this.currencies.clear();
-        this.currencies.putAll(this.getCurrenciesAsMap());
 
         return this.primaryConfig != null && this.messagesConfig != null;
     }
@@ -107,67 +99,25 @@ public final class ConfigController {
     }
 
     // Gets the storage config from the primary config
+    public @NotNull CurrencyConfig getCurrencyConfig() {
+        try {
+            final var config = this.primaryConfig.node("currency").get(CurrencyConfig.class);
+            return config != null ? config : new CurrencyConfig();
+        } catch (final ConfigurateException e) {
+            this.plugin.getComponentLogger().error("Failed to get currency config", e);
+            return new CurrencyConfig();
+        }
+    }
+
+    // Gets the storage config from the primary config
     public @NotNull StorageConfig getStorageConfig() {
         try {
-            final var config = this.primaryConfig.node("options").get(StorageConfig.class);
+            final var config = this.primaryConfig.node("storage").get(StorageConfig.class);
             return config != null ? config : new StorageConfig();
         } catch (final ConfigurateException e) {
             this.plugin.getComponentLogger().error("Failed to get storage config", e);
             return new StorageConfig();
         }
-    }
-
-    // Gets a currency from the currencies config
-    public @Nullable Currency getCurrency(final String name) {
-        final var node = this.currenciesConfig.node("currencies");
-
-        if (node.virtual()) {
-            // Currency does not exist
-            return null;
-        }
-
-        try {
-            return node.get(Currency.class);
-        } catch (final ConfigurateException e) {
-            this.plugin.getComponentLogger().error("Failed to parse currency '{}'", name, e);
-            return null;
-        }
-    }
-
-    // Gets a list of all configured currencies
-    public @NotNull List<Currency> getCurrencyList() {
-        return List.copyOf(this.currencies.values());
-    }
-
-    // Gets a set of all configured currency names
-    public @NotNull Set<String> getCurrencyNames() {
-        return this.currencies.values()
-                .stream()
-                .map(Currency::getName)
-                .collect(Collectors.toSet());
-    }
-
-    // Gets a map of all configured currencies
-    public @NotNull Map<String, Currency> getCurrenciesAsMap() {
-        final Map<String, Currency> currencies = new HashMap<>();
-        final Map<Object, ? extends CommentedConfigurationNode> nodes = this.currenciesConfig.node("currencies")
-                .childrenMap();
-
-        for (final Map.Entry<Object, ? extends CommentedConfigurationNode> entry : nodes.entrySet()) {
-            try {
-                final String currencyName = String.valueOf(entry.getKey());
-                final Currency currency = entry.getValue().get(Currency.class);
-
-                if (currency != null) {
-                    // Currency found, added to map
-                    currencies.put(currencyName, currency);
-                }
-            } catch (final ConfigurateException e) {
-                this.plugin.getComponentLogger().error("Failed to parse currency '{}'", entry.getKey(), e);
-            }
-        }
-
-        return Collections.unmodifiableMap(currencies);
     }
 
     // Gets a message from the message config

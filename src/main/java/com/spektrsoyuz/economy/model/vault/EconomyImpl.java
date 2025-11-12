@@ -2,10 +2,10 @@ package com.spektrsoyuz.economy.model.vault;
 
 import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
+import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.model.Account;
 import com.spektrsoyuz.economy.model.Transactor;
-import com.spektrsoyuz.economy.model.config.Currency;
-import com.spektrsoyuz.economy.model.config.OptionsConfig;
+import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.RequiredArgsConstructor;
 import net.milkbowl.vault2.economy.AccountPermission;
 import net.milkbowl.vault2.economy.Economy;
@@ -22,15 +22,14 @@ import java.util.*;
 public final class EconomyImpl implements Economy {
 
     private final EconomyPlugin plugin;
-    private OptionsConfig optionsConfig;
-    private Map<String, Currency> currencies;
+
+    private CurrencyConfig currencyConfig;
 
     // Registers the economy service
     public void register() {
         this.plugin.getServer().getServicesManager().register(Economy.class, this, this.plugin, ServicePriority.Highest);
 
-        this.optionsConfig = this.plugin.getConfigController().getOptionsConfig();
-        this.currencies = this.plugin.getConfigController().getCurrenciesAsMap();
+        this.currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
     }
 
     @Override
@@ -50,22 +49,17 @@ public final class EconomyImpl implements Economy {
 
     @Override
     public boolean hasMultiCurrencySupport() {
-        return true;
+        return false;
     }
 
     @Override
     public int fractionalDigits(@NotNull String pluginName) {
-        return 2;
+        return -1;
     }
 
     @Override
     public @NotNull String format(@NotNull BigDecimal amount) {
-        final String defaultCurrency = this.optionsConfig.getDefaultCurrency();
-        final Currency currency = this.currencies.get(defaultCurrency);
-
-        return String.format("%s%s %s", currency.getSymbol(), amount, amount.compareTo(BigDecimal.ONE) != 0
-                ? currency.getNamePlural()
-                : currency.getNameSingular());
+        return EconomyUtils.format(plugin, amount);
     }
 
     @Override
@@ -85,33 +79,27 @@ public final class EconomyImpl implements Economy {
 
     @Override
     public boolean hasCurrency(@NotNull String currency) {
-        return this.currencies.get(currency) != null;
+        return currency.equals(this.currencyConfig.getName());
     }
 
     @Override
     public @NotNull String getDefaultCurrency(@NotNull String pluginName) {
-        return this.optionsConfig.getDefaultCurrency();
+        return this.currencyConfig.getName();
     }
 
     @Override
     public @NotNull String defaultCurrencyNamePlural(@NotNull String pluginName) {
-        final Currency currency = this.currencies.get(this.optionsConfig.getDefaultCurrency());
-        return currency != null
-                ? currency.getNamePlural()
-                : "";
+        return this.currencyConfig.getNamePlural();
     }
 
     @Override
     public @NotNull String defaultCurrencyNameSingular(@NotNull String pluginName) {
-        final Currency currency = this.currencies.get(this.optionsConfig.getDefaultCurrency());
-        return currency != null
-                ? currency.getNameSingular()
-                : "";
+        return this.currencyConfig.getNameSingular();
     }
 
     @Override
     public @NotNull Collection<String> currencies() {
-        return this.currencies.keySet();
+        return List.of(this.currencyConfig.getName());
     }
 
     @Override
@@ -176,10 +164,8 @@ public final class EconomyImpl implements Economy {
 
     @Override
     public boolean accountSupportsCurrency(@NotNull String plugin, @NotNull UUID accountID, @NotNull String currency) {
-        if (this.plugin.getAccountController().getAccount(accountID).isPresent()) {
-            this.currencies.get(currency);
-        }
-        return false;
+        return this.plugin.getAccountController().getAccount(accountID).isPresent()
+                && currency.equals(this.currencyConfig.getName());
     }
 
     @Override
@@ -189,94 +175,76 @@ public final class EconomyImpl implements Economy {
 
     @Override
     public @NotNull BigDecimal getBalance(@NotNull String pluginName, @NotNull UUID accountID) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.getBalance(pluginName, accountID, "", currency);
-    }
-
-    @Override
-    public @NotNull BigDecimal getBalance(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String world) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.getBalance(pluginName, accountID, world, currency);
-    }
-
-    @Override
-    public @NotNull BigDecimal getBalance(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String world, @NotNull String currency) {
         final Optional<Account> account = this.plugin.getAccountController().getAccount(accountID);
 
         if (account.isPresent()) {
-            return account.get().getBalance(currency);
+            return account.get().getBalance();
         } else {
             return BigDecimal.ZERO;
         }
     }
 
     @Override
+    public @NotNull BigDecimal getBalance(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String world) {
+        return this.getBalance(pluginName, accountID);
+    }
+
+    @Override
+    public @NotNull BigDecimal getBalance(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String world, @NotNull String currency) {
+        return this.getBalance(pluginName, accountID);
+    }
+
+    @Override
     public boolean has(@NotNull String pluginName, @NotNull UUID accountID, @NotNull BigDecimal amount) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.has(pluginName, accountID, "", currency, amount);
+        return this.getBalance(pluginName, accountID).compareTo(amount) >= 0;
     }
 
     @Override
     public boolean has(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull BigDecimal amount) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.has(pluginName, accountID, worldName, currency, amount);
+        return this.has(pluginName, accountID, amount);
     }
 
     @Override
     public boolean has(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull String currency, @NotNull BigDecimal amount) {
-        return this.getBalance(pluginName, accountID, worldName, currency).compareTo(amount) >= 0;
+        return this.has(pluginName, accountID, amount);
     }
 
     @Override
     public @NotNull EconomyResponse withdraw(@NotNull String pluginName, @NotNull UUID accountID, @NotNull BigDecimal amount) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.withdraw(pluginName, accountID, "", currency, amount);
+        final Optional<Account> account = this.plugin.getAccountController().getAccount(accountID);
+
+        if (account.isEmpty()) {
+            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "could not load account");
+        }
+
+        if (account.get().isFrozen()) {
+            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "account is frozen");
+        }
+
+        if (account.get().getBalance().compareTo(amount) < 0) {
+            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "insufficient balance");
+        }
+
+        final boolean success = account.get().subtractBalance(amount, Transactor.VAULT);
+        if (success) {
+            return new EconomyResponse(amount, account.get().getBalance(), EconomyResponse.ResponseType.SUCCESS, "");
+        } else {
+            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "could not perform transaction");
+        }
     }
 
     @Override
     public @NotNull EconomyResponse withdraw(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull BigDecimal amount) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.withdraw(pluginName, accountID, worldName, currency, amount);
+        return this.withdraw(pluginName, accountID, amount);
     }
 
     @Override
     public @NotNull EconomyResponse withdraw(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull String currency, @NotNull BigDecimal amount) {
-        final Optional<Account> account = this.plugin.getAccountController().getAccount(accountID);
-
-        if (account.isEmpty()) {
-            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "could not load account");
-        }
-
-        if (account.get().isFrozen()) {
-            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "account is frozen");
-        }
-
-        if (account.get().getBalance(currency).compareTo(amount) < 0) {
-            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "insufficient balance");
-        }
-
-        final boolean success = account.get().subtractBalance(currency, amount, Transactor.VAULT);
-        if (success) {
-            return new EconomyResponse(amount, account.get().getBalance(currency), EconomyResponse.ResponseType.SUCCESS, "");
-        } else {
-            return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "could not perform transaction");
-        }
+        return this.withdraw(pluginName, accountID, amount);
     }
 
     @Override
     public @NotNull EconomyResponse deposit(@NotNull String pluginName, @NotNull UUID accountID, @NotNull BigDecimal amount) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.deposit(pluginName, accountID, "", currency, amount);
-    }
-
-    @Override
-    public @NotNull EconomyResponse deposit(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull BigDecimal amount) {
-        final String currency = this.optionsConfig.getDefaultCurrency();
-        return this.deposit(pluginName, accountID, worldName, currency, amount);
-    }
-
-    @Override
-    public @NotNull EconomyResponse deposit(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull String currency, @NotNull BigDecimal amount) {
         final Optional<Account> account = this.plugin.getAccountController().getAccount(accountID);
 
         if (account.isEmpty()) {
@@ -287,12 +255,22 @@ public final class EconomyImpl implements Economy {
             return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "account is frozen");
         }
 
-        final boolean success = account.get().addBalance(currency, amount, Transactor.VAULT);
+        final boolean success = account.get().addBalance(amount, Transactor.VAULT);
         if (success) {
-            return new EconomyResponse(amount, account.get().getBalance(currency), EconomyResponse.ResponseType.SUCCESS, "");
+            return new EconomyResponse(amount, account.get().getBalance(), EconomyResponse.ResponseType.SUCCESS, "");
         } else {
             return new EconomyResponse(amount, BigDecimal.ZERO, EconomyResponse.ResponseType.FAILURE, "could not perform transaction");
         }
+    }
+
+    @Override
+    public @NotNull EconomyResponse deposit(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull BigDecimal amount) {
+        return this.deposit(pluginName, accountID, amount);
+    }
+
+    @Override
+    public @NotNull EconomyResponse deposit(@NotNull String pluginName, @NotNull UUID accountID, @NotNull String worldName, @NotNull String currency, @NotNull BigDecimal amount) {
+        return this.deposit(pluginName, accountID, amount);
     }
 
     @Override

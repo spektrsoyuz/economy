@@ -2,10 +2,10 @@ package com.spektrsoyuz.economy.model.vault;
 
 import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
+import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.model.Account;
 import com.spektrsoyuz.economy.model.Transactor;
-import com.spektrsoyuz.economy.model.config.Currency;
-import com.spektrsoyuz.economy.model.config.OptionsConfig;
+import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.RequiredArgsConstructor;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -15,7 +15,6 @@ import org.bukkit.plugin.ServicePriority;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 // Model class for Vault legacy economy integration
@@ -24,17 +23,14 @@ import java.util.Optional;
 public class LegacyEconomyImpl implements Economy {
 
     private final EconomyPlugin plugin;
-    private OptionsConfig optionsConfig;
-    private Map<String, Currency> currencies;
-    private Currency defaultCurrency;
+
+    private CurrencyConfig currencyConfig;
 
     // Registers the economy service
     public void register() {
         this.plugin.getServer().getServicesManager().register(Economy.class, this, this.plugin, ServicePriority.Highest);
 
-        this.optionsConfig = this.plugin.getConfigController().getOptionsConfig();
-        this.currencies = this.plugin.getConfigController().getCurrenciesAsMap();
-        this.defaultCurrency = this.currencies.get(this.optionsConfig.getDefaultCurrency());
+        this.currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
     }
 
     @Override
@@ -59,22 +55,17 @@ public class LegacyEconomyImpl implements Economy {
 
     @Override
     public String format(double amount) {
-        final String defaultCurrency = this.optionsConfig.getDefaultCurrency();
-        final Currency currency = this.currencies.get(defaultCurrency);
-
-        return String.format("%s%s %s", currency.getSymbol(), amount, amount != 1
-                ? currency.getNamePlural()
-                : currency.getNameSingular());
+        return EconomyUtils.format(this.plugin, BigDecimal.valueOf(amount));
     }
 
     @Override
     public String currencyNamePlural() {
-        return this.defaultCurrency.getNamePlural();
+        return this.currencyConfig.getNamePlural();
     }
 
     @Override
     public String currencyNameSingular() {
-        return this.defaultCurrency.getNameSingular();
+        return this.currencyConfig.getNameSingular();
     }
 
     @Override
@@ -100,7 +91,7 @@ public class LegacyEconomyImpl implements Economy {
     @Override
     public double getBalance(String playerName) {
         final Optional<Account> account = this.plugin.getAccountController().getAccount(playerName);
-        return account.map(value -> value.getBalance(this.defaultCurrency.getName()).doubleValue()).orElse(0.0);
+        return account.map(value -> value.getBalance().doubleValue()).orElse(0.0);
     }
 
     @Override
@@ -150,13 +141,13 @@ public class LegacyEconomyImpl implements Economy {
             return new EconomyResponse(amount, 0, EconomyResponse.ResponseType.FAILURE, "account is frozen");
         }
 
-        if (account.get().getBalance(this.defaultCurrency.getName()).doubleValue() < amount) {
+        if (account.get().getBalance().doubleValue() < amount) {
             return new EconomyResponse(amount, 0, EconomyResponse.ResponseType.FAILURE, "insufficient balance");
         }
 
-        final boolean success = account.get().subtractBalance(this.defaultCurrency.getName(), BigDecimal.valueOf(amount), Transactor.VAULT);
+        final boolean success = account.get().subtractBalance(BigDecimal.valueOf(amount), Transactor.VAULT);
         if (success) {
-            return new EconomyResponse(amount, account.get().getBalance(this.defaultCurrency.getName()).doubleValue(), EconomyResponse.ResponseType.SUCCESS, null);
+            return new EconomyResponse(amount, account.get().getBalance().doubleValue(), EconomyResponse.ResponseType.SUCCESS, null);
         } else {
             return new EconomyResponse(amount, 0, EconomyResponse.ResponseType.FAILURE, "could not perform transaction");
         }
@@ -189,9 +180,9 @@ public class LegacyEconomyImpl implements Economy {
             return new EconomyResponse(amount, 0, EconomyResponse.ResponseType.FAILURE, "account is frozen");
         }
 
-        final boolean success = account.get().addBalance(this.defaultCurrency.getName(), BigDecimal.valueOf(amount), Transactor.VAULT);
+        final boolean success = account.get().addBalance(BigDecimal.valueOf(amount), Transactor.VAULT);
         if (success) {
-            return new EconomyResponse(amount, account.get().getBalance(this.defaultCurrency.getName()).doubleValue(), EconomyResponse.ResponseType.SUCCESS, null);
+            return new EconomyResponse(amount, account.get().getBalance().doubleValue(), EconomyResponse.ResponseType.SUCCESS, null);
         } else {
             return new EconomyResponse(amount, 0, EconomyResponse.ResponseType.FAILURE, "could not perform transaction");
         }
