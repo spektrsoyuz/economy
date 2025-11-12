@@ -14,6 +14,8 @@ public final class Currency {
     private final String namePlural;
     @Setting("name-singular")
     private final String nameSingular;
+    @Setting("starting-balance")
+    private final double startingBalance;
     private final String symbol;
 
     // Constructor
@@ -21,6 +23,7 @@ public final class Currency {
         this.name = "crowns";
         this.namePlural = "crowns";
         this.nameSingular = "crown";
+        this.startingBalance = 0.0;
         this.symbol = "♛";
     }
 }

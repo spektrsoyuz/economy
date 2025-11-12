@@ -1,18 +1,24 @@
 package com.spektrsoyuz.economy;
 
+import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
+import com.spektrsoyuz.economy.listener.PlayerListener;
+import com.spektrsoyuz.economy.model.vault.EconomyImpl;
+import com.spektrsoyuz.economy.model.vault.LegacyEconomyImpl;
 import com.spektrsoyuz.economy.task.AccountQueueTask;
 import com.spektrsoyuz.economy.task.TransactionQueueTask;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import lombok.Getter;
+import net.milkbowl.vault2.economy.Economy;
 import org.bukkit.plugin.java.JavaPlugin;
 
 // Main class for the economy plugin
 @Getter
 public final class EconomyPlugin extends JavaPlugin {
 
+    private final AccountController accountController = new AccountController(this);
     private final ConfigController configController = new ConfigController(this);
     private final DataController dataController = new DataController(this);
 
@@ -35,6 +41,7 @@ public final class EconomyPlugin extends JavaPlugin {
         }
 
         this.dataController.initialize();
+        this.accountController.initialize();
 
         // Check for Vault
         if (this.getServer().getPluginManager().getPlugin("Vault") == null) {
@@ -46,6 +53,16 @@ public final class EconomyPlugin extends JavaPlugin {
         this.registerCommands();
         this.registerListeners();
         this.registerTasks();
+
+        // Register economy
+        new EconomyImpl(this).register();
+        new LegacyEconomyImpl(this).register();
+
+        // Verify economy registration
+        if (this.getServer().getServicesManager().load(Economy.class) == null) {
+            this.getComponentLogger().error("Failed to register Economy with Vault, disabling plugin");
+            this.getServer().getPluginManager().disablePlugin(this);
+        }
     }
 
     @Override
@@ -65,7 +82,7 @@ public final class EconomyPlugin extends JavaPlugin {
 
     private void registerListeners() {
         // Register listeners
-
+        new PlayerListener(this);
     }
 
     private void registerTasks() {
