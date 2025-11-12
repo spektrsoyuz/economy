@@ -19,14 +19,29 @@ public final class TransactionQueueTask extends BukkitRunnable {
     public void queue(final Transaction transaction) {
         this.queue.add(transaction);
 
-        this.plugin.getComponentLogger().debug("Added transaction for account '{}:{}' to the queue",
-                transaction.accountId(),
-                transaction.accountName()
-        );
+        if (this.plugin.getConfigController().getOptionsConfig().isDebug()) {
+            this.plugin.getComponentLogger().debug("Added transaction for account '{}:{}' to the queue",
+                    transaction.accountId(),
+                    transaction.accountName()
+            );
+        }
     }
 
     @Override
     public void run() {
+        // Save transactions to database
+        for (final Transaction transaction : queue) {
+            this.plugin.getDataController().saveTransaction(transaction);
 
+            if (this.plugin.getConfigController().getOptionsConfig().isDebug()) {
+                this.plugin.getComponentLogger().warn("Saved transaction for account '{}:{}' to the database",
+                        transaction.accountId(),
+                        transaction.accountName()
+                );
+            }
+        }
+
+        // Clear the queue
+        this.queue.clear();
     }
 }

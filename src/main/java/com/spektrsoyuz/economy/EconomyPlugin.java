@@ -1,10 +1,17 @@
 package com.spektrsoyuz.economy;
 
+import com.spektrsoyuz.economy.command.BalanceCommand;
+import com.spektrsoyuz.economy.command.BalanceTopCommand;
+import com.spektrsoyuz.economy.command.EconomyCommand;
+import com.spektrsoyuz.economy.command.PayCommand;
 import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
 import com.spektrsoyuz.economy.listener.PlayerListener;
+import com.spektrsoyuz.economy.model.vault.EconomyImpl;
+import com.spektrsoyuz.economy.model.vault.LegacyEconomyImpl;
 import com.spektrsoyuz.economy.task.AccountQueueTask;
+import com.spektrsoyuz.economy.task.AccountSyncTask;
 import com.spektrsoyuz.economy.task.TransactionQueueTask;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -22,6 +29,7 @@ public final class EconomyPlugin extends JavaPlugin {
 
     private final AccountQueueTask accountQueueTask = new AccountQueueTask(this);
     private final TransactionQueueTask transactionQueueTask = new TransactionQueueTask(this);
+    private final AccountSyncTask accountSyncTask = new AccountSyncTask(this);
 
     @Override
     public void onLoad() {
@@ -53,8 +61,8 @@ public final class EconomyPlugin extends JavaPlugin {
         this.registerTasks();
 
         // Register economy
-        //new EconomyImpl(this).register();
-        //new LegacyEconomyImpl(this).register();
+        new EconomyImpl(this).register();
+        new LegacyEconomyImpl(this).register();
 
         // Verify economy registration
         if (this.getServer().getServicesManager().load(Economy.class) == null) {
@@ -74,7 +82,10 @@ public final class EconomyPlugin extends JavaPlugin {
         this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             final Commands registrar = event.registrar();
 
-
+            new BalanceCommand(this).register(registrar);
+            new BalanceTopCommand(this).register(registrar);
+            new EconomyCommand(this).register(registrar);
+            new PayCommand(this).register(registrar);
         });
     }
 
@@ -88,5 +99,6 @@ public final class EconomyPlugin extends JavaPlugin {
         // ticks = seconds * 20
         this.accountQueueTask.runTaskTimerAsynchronously(this, 0, 30 * 20); // run every 30 seconds
         this.transactionQueueTask.runTaskTimerAsynchronously(this, 0, 30 * 20); // run every 30 seconds
+        this.accountSyncTask.runTaskTimer(this, 0, 30 * 20); // run every 30 seconds
     }
 }
