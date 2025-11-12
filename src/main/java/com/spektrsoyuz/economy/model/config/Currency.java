@@ -2,6 +2,7 @@ package com.spektrsoyuz.economy.model.config;
 
 import lombok.Getter;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
+import org.spongepowered.configurate.objectmapping.meta.Setting;
 
 // Class for the currency config section
 @Getter
@@ -9,7 +10,9 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 public final class Currency {
 
     private final String name;
+    @Setting("name-plural")
     private final String namePlural;
+    @Setting("name-singular")
     private final String nameSingular;
     private final String symbol;
 

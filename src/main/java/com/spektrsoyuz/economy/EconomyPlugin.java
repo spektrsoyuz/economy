@@ -1,6 +1,7 @@
 package com.spektrsoyuz.economy;
 
 import com.spektrsoyuz.economy.controller.ConfigController;
+import com.spektrsoyuz.economy.controller.DataController;
 import com.spektrsoyuz.economy.task.AccountQueueTask;
 import com.spektrsoyuz.economy.task.TransactionQueueTask;
 import io.papermc.paper.command.brigadier.Commands;
@@ -13,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class EconomyPlugin extends JavaPlugin {
 
     private final ConfigController configController = new ConfigController(this);
+    private final DataController dataController = new DataController(this);
 
     private final AccountQueueTask accountQueueTask = new AccountQueueTask(this);
     private final TransactionQueueTask transactionQueueTask = new TransactionQueueTask(this);
@@ -32,6 +34,8 @@ public final class EconomyPlugin extends JavaPlugin {
             this.getComponentLogger().error("Failed to load config files");
         }
 
+        this.dataController.initialize();
+
         // Check for Vault
         if (this.getServer().getPluginManager().getPlugin("Vault") == null) {
             this.getComponentLogger().error("Failed to get provider for Vault plugin, disabling plugin");
@@ -39,12 +43,15 @@ public final class EconomyPlugin extends JavaPlugin {
             return;
         }
 
+        this.registerCommands();
+        this.registerListeners();
         this.registerTasks();
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        this.dataController.close();
     }
 
     private void registerCommands() {
