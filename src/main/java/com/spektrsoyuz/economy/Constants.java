@@ -4,7 +4,7 @@ package com.spektrsoyuz.economy;
 public final class Constants {
 
     // Plugin constants
-    public static final String PLUGIN_NAME = "ae-economy";
+    public static final String PLUGIN_NAME = "economy";
     public static final String CONFIG_PRIMARY = "config.conf";
     public static final String CONFIG_MESSAGES = "messages.conf";
 
