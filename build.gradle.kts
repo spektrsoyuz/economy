@@ -10,8 +10,7 @@ plugins {
 }
 
 group = "com.spektrsoyuz"
-val baseVersion = "1.0.0"
-version = "$baseVersion-${providers.gradleProperty("buildVersion").getOrElse("SNAPSHOT")}"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
