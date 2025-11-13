@@ -48,7 +48,6 @@ public final class BalanceCommand {
 
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
             // Account found for player
-            final String balance = account.getBalance().toString();
             final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
             final String currency = EconomyUtils.format(this.plugin, account.getBalance());
 
@@ -56,7 +55,6 @@ public final class BalanceCommand {
             sender.sendMessage(this.plugin.getConfigController().getMessage("command-balance",
                     Placeholder.parsed("name", account.getFormattedName()),
                     Placeholder.parsed("symbol", symbol),
-                    Placeholder.parsed("amount", balance),
                     Placeholder.parsed("currency", currency)
             ));
         }, () -> {
@@ -74,7 +72,6 @@ public final class BalanceCommand {
 
         this.plugin.getAccountController().getAccount(accountName).ifPresentOrElse(account -> {
             // Account found for player
-            final String balance = account.getBalance().toString();
             final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
             final String currency = EconomyUtils.format(this.plugin, account.getBalance());
 
@@ -90,7 +87,6 @@ public final class BalanceCommand {
             sender.sendMessage(this.plugin.getConfigController().getMessage("command-balance-other",
                     Placeholder.parsed("name", account.getFormattedName()),
                     Placeholder.parsed("symbol", symbol),
-                    Placeholder.parsed("amount", balance),
                     Placeholder.parsed("currency", currency)
             ));
         }, () -> {

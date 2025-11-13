@@ -46,7 +46,6 @@ public final class BalanceTopCommand {
                     // Create component for account
                     return this.plugin.getConfigController().getMessage("command-balancetop-body",
                             Placeholder.parsed("name", name),
-                            Placeholder.parsed("balance", balance),
                             Placeholder.parsed("currency", currency)
                     );
                 })

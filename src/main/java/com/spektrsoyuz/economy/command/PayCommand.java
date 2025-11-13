@@ -87,14 +87,12 @@ public final class PayCommand {
                                 player.sendMessage(this.plugin.getConfigController().getMessage("command-pay-send",
                                         Placeholder.parsed("name", name),
                                         Placeholder.parsed("symbol", symbol),
-                                        Placeholder.parsed("amount", amountBD.toString()),
                                         Placeholder.parsed("currency", currency)));
 
                                 // Send success message to target
                                 targetPlayer.sendMessage(this.plugin.getConfigController().getMessage("command-pay-receive",
                                         Placeholder.parsed("name", name),
                                         Placeholder.parsed("symbol", symbol),
-                                        Placeholder.parsed("amount", amountBD.toString()),
                                         Placeholder.parsed("currency", currency)));
 
                                 return Command.SINGLE_SUCCESS;

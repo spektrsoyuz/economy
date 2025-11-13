@@ -124,7 +124,6 @@ public final class EconomyCommand {
             sender.sendMessage(this.plugin.getConfigController().getMessage("command-economy-add",
                     Placeholder.parsed("name", accountName),
                     Placeholder.parsed("symbol", symbol),
-                    Placeholder.parsed("amount", String.valueOf(amount)),
                     Placeholder.parsed("currency", currency)
             ));
         }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found")));
@@ -249,7 +248,6 @@ public final class EconomyCommand {
             sender.sendMessage(this.plugin.getConfigController().getMessage("command-economy-set",
                     Placeholder.parsed("name", accountName),
                     Placeholder.parsed("symbol", symbol),
-                    Placeholder.parsed("amount", String.valueOf(amount)),
                     Placeholder.parsed("currency", currency)
             ));
         }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found")));
@@ -276,7 +274,6 @@ public final class EconomyCommand {
             sender.sendMessage(this.plugin.getConfigController().getMessage("command-economy-subtract",
                     Placeholder.parsed("name", accountName),
                     Placeholder.parsed("symbol", symbol),
-                    Placeholder.parsed("amount", String.valueOf(amount)),
                     Placeholder.parsed("currency", currency)
             ));
         }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage("error-account-not-found")));
