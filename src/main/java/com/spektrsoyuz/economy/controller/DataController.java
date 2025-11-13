@@ -168,7 +168,7 @@ public final class DataController {
         CompletableFuture.runAsync(() -> {
             try {
                 this.executeUpdate(this.sqlSaveTransaction,
-                        transaction.accountId(),
+                        transaction.accountId().toString(),
                         transaction.transactor().name(),
                         transaction.accountName(),
                         transaction.amount()
