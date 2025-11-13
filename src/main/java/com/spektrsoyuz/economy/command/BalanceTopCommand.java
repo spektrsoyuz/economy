@@ -40,7 +40,6 @@ public final class BalanceTopCommand {
                 .stream()
                 .map(account -> {
                     final String name = account.getFormattedName();
-                    final String balance = account.getBalance().toString();
                     final String currency = EconomyUtils.format(this.plugin, account.getBalance());
 
                     // Create component for account
