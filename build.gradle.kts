@@ -10,7 +10,8 @@ plugins {
 }
 
 group = "com.spektrsoyuz"
-version = "1.0.0"
+val baseVersion = "1.0.0"
+version = "$baseVersion-${providers.gradleProperty("buildVersion").getOrElse("SNAPSHOT")}"
 
 repositories {
     mavenCentral()
@@ -42,6 +43,7 @@ tasks {
     }
     shadowJar {
         archiveClassifier.set("")
+        archiveBaseName.set("economy")
     }
 }
 

@@ -36,5 +36,15 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
+      - name: Generate Build Version
+        run: echo "BUILD_VERSION=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_ENV
+
       - name: Build with Gradle Wrapper
-        run: ./gradlew build
+        run: ./gradlew build -PbuildVersion=${{ env.BUILD_VERSION }}
+
+      - name: Upload Artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v5
+        with:
+          name: economy-plugin
+          path: build/libs/economy-*.jar
