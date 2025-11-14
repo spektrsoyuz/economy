@@ -54,7 +54,7 @@ paper {
     apiVersion = "1.21.8"
     website = "https://spektrsoyuz.com"
     authors = listOf("SpektrSoyuz")
-    foliaSupported = false
+    foliaSupported = true
 
     serverDependencies {
         // Dependencies

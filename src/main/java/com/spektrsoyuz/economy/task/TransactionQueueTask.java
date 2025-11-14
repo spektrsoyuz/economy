@@ -3,14 +3,13 @@ package com.spektrsoyuz.economy.task;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.Transaction;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
 
 // Task for saving transactions
 @RequiredArgsConstructor
-public final class TransactionQueueTask extends BukkitRunnable {
+public final class TransactionQueueTask implements Runnable {
 
     private final EconomyPlugin plugin;
     private final List<Transaction> queue = new ArrayList<>();

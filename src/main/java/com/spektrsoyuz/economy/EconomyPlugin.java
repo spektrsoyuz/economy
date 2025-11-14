@@ -15,6 +15,7 @@ import com.spektrsoyuz.economy.task.AccountSyncTask;
 import com.spektrsoyuz.economy.task.TransactionQueueTask;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
 import lombok.Getter;
 import net.milkbowl.vault2.economy.Economy;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -75,6 +76,7 @@ public final class EconomyPlugin extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         this.dataController.close();
+        this.getServer().getGlobalRegionScheduler().cancelTasks(this);
     }
 
     private void registerCommands() {
@@ -97,8 +99,25 @@ public final class EconomyPlugin extends JavaPlugin {
     private void registerTasks() {
         // Register tasks
         // ticks = seconds * 20
-        this.accountQueueTask.runTaskTimerAsynchronously(this, 0, 30 * 20); // run every 30 seconds
-        this.transactionQueueTask.runTaskTimerAsynchronously(this, 0, 30 * 20); // run every 30 seconds
-        this.accountSyncTask.runTaskTimer(this, 0, 30 * 20); // run every 30 seconds
+        final GlobalRegionScheduler globalScheduler = this.getServer().getGlobalRegionScheduler();
+
+        globalScheduler.runAtFixedRate(
+                this,
+                scheduledTask -> this.accountQueueTask.run(),
+                5,
+                30 * 20
+        );
+        globalScheduler.runAtFixedRate(
+                this,
+                scheduledTask -> this.transactionQueueTask.run(),
+                5,
+                30 * 20
+        );
+        globalScheduler.runAtFixedRate(
+                this,
+                scheduledTask -> this.accountSyncTask.run(),
+                5,
+                30 * 20
+        );
     }
 }

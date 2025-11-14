@@ -3,7 +3,6 @@ package com.spektrsoyuz.economy.task;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.Account;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -11,7 +10,7 @@ import java.util.List;
 
 // BukkitRunnable class for syncing account caches
 @RequiredArgsConstructor
-public class AccountSyncTask extends BukkitRunnable {
+public class AccountSyncTask implements Runnable {
 
     private final EconomyPlugin plugin;
 
