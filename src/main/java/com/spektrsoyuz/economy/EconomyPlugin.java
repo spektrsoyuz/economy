@@ -15,10 +15,12 @@ import com.spektrsoyuz.economy.task.AccountSyncTask;
 import com.spektrsoyuz.economy.task.TransactionQueueTask;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
-import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
+import io.papermc.paper.threadedregions.scheduler.AsyncScheduler;
 import lombok.Getter;
 import net.milkbowl.vault2.economy.Economy;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.concurrent.TimeUnit;
 
 // Main class for the economy plugin
 @Getter
@@ -99,25 +101,28 @@ public final class EconomyPlugin extends JavaPlugin {
     private void registerTasks() {
         // Register tasks
         // ticks = seconds * 20
-        final GlobalRegionScheduler globalScheduler = this.getServer().getGlobalRegionScheduler();
+        final AsyncScheduler asyncScheduler = this.getServer().getAsyncScheduler();
 
-        globalScheduler.runAtFixedRate(
+        asyncScheduler.runAtFixedRate(
                 this,
                 scheduledTask -> this.accountQueueTask.run(),
-                5,
-                30 * 20
+                1,
+                30,
+                TimeUnit.SECONDS
         );
-        globalScheduler.runAtFixedRate(
+        asyncScheduler.runAtFixedRate(
                 this,
                 scheduledTask -> this.transactionQueueTask.run(),
-                5,
-                30 * 20
+                1,
+                30,
+                TimeUnit.SECONDS
         );
-        globalScheduler.runAtFixedRate(
+        asyncScheduler.runAtFixedRate(
                 this,
                 scheduledTask -> this.accountSyncTask.run(),
-                5,
-                30 * 20
+                1,
+                30,
+                TimeUnit.SECONDS
         );
     }
 }
