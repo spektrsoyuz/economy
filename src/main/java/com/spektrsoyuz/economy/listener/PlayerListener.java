@@ -8,9 +8,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 // Listener class for handling player events
-public final class PlayerListener implements Listener {
-
-    private final EconomyPlugin plugin;
+public record PlayerListener(EconomyPlugin plugin) implements Listener {
 
     // Constructor
     public PlayerListener(final EconomyPlugin plugin) {
