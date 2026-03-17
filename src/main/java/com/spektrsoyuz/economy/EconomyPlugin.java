@@ -1,5 +1,9 @@
 package com.spektrsoyuz.economy;
 
+import com.spektrsoyuz.economy.command.BalanceCommand;
+import com.spektrsoyuz.economy.command.BalanceTopCommand;
+import com.spektrsoyuz.economy.command.EconomyCommand;
+import com.spektrsoyuz.economy.command.PayCommand;
 import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
@@ -13,6 +17,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import io.papermc.paper.threadedregions.scheduler.AsyncScheduler;
 import lombok.Getter;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.milkbowl.vault2.economy.Economy;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -34,9 +39,13 @@ public final class EconomyPlugin extends JavaPlugin {
     private final TransactionQueueTask transactionQueueTask = new TransactionQueueTask(this);
     private final AccountSyncTask accountSyncTask = new AccountSyncTask(this);
 
+    private MiniMessage miniMessage;
+
     @Override
     public void onEnable() {
         // Plugin startup logic
+        this.miniMessage = MiniMessage.miniMessage();
+
         this.configController.initialize();
         this.dataController.initialize();
         this.accountController.initialize();
@@ -66,7 +75,9 @@ public final class EconomyPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        this.dataController.close();
 
+        this.getServer().getGlobalRegionScheduler().cancelTasks(this);
     }
 
     private void registerCommands() {
@@ -74,7 +85,10 @@ public final class EconomyPlugin extends JavaPlugin {
         this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             final Commands registrar = event.registrar();
 
-
+            new BalanceCommand(this).register(registrar);
+            new BalanceTopCommand(this).register(registrar);
+            new EconomyCommand(this).register(registrar);
+            new PayCommand(this).register(registrar);
         });
     }
 
