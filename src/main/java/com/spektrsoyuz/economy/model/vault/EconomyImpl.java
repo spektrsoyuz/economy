@@ -321,4 +321,5 @@ public final class EconomyImpl implements Economy {
     public boolean updateAccountPermission(@NotNull String pluginName, @NotNull UUID accountID, @NotNull UUID uuid, @NotNull AccountPermission permission, boolean value) {
         return false;
     }
+
 }
