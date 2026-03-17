@@ -13,37 +13,25 @@ public final class EconomyUtils {
 
     // Returns a formatted currency string
     public static String format(final EconomyPlugin plugin, BigDecimal amount) {
-        final CurrencyConfig currencyConfig = plugin.getConfigController().getCurrencyConfig();
+        final CurrencyConfig config = plugin.getConfigController().getCurrencyConfig();
 
-        final String name = amount.compareTo(BigDecimal.ONE) != 0
-                ? currencyConfig.getNamePlural()
-                : currencyConfig.getNameSingular();
+        final String label = (amount.compareTo(BigDecimal.ONE) == 0)
+                ? config.getNameSingular()
+                : config.getNamePlural();
 
-        // Experience formatting
-        if (currencyConfig.getType().equals("exp")) {
+        // Handle experience formatting
+        if ("exp".equalsIgnoreCase(config.getType())) {
             final long totalPoints = amount.longValue();
             final int levelCost = Constants.LEVEL_COST;
 
             final long levels = totalPoints / levelCost;
-            final long remainder = totalPoints % levelCost;
+            final long displayDecimal = (totalPoints % levelCost * 100) / levelCost;
 
-            final int precision = String.valueOf(levelCost - 1).length();
-
-            return String.format(
-                    "%s%d.%0" + precision + "d %s",
-                    currencyConfig.getSymbol(),
-                    levels,
-                    remainder,
-                    name
-            );
+            return String.format("%s%d.%02d %s", config.getSymbol(), levels, displayDecimal, label);
         }
 
-        // Default formatting
-        return String.format("%s%s %s",
-                currencyConfig.getSymbol(),
-                amount,
-                name
-        );
+        // Handle default formatting
+        return String.format("%s%s %s", config.getSymbol(), amount.toPlainString(), label);
     }
 
 }
