@@ -2,6 +2,7 @@ package com.spektrsoyuz.economy.listener;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Transactor;
+import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -42,7 +43,12 @@ public class PlayerListener implements Listener {
             }
 
             this.plugin.getAccountController().addPlayerAccount(account);
-            this.plugin.getAccountController().updateExp(player);
+
+            final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+
+            if (currencyConfig.getType().equals("exp")) {
+                this.plugin.getAccountController().updateExp(player);
+            }
         }, () -> {
             // Create new account for player
             this.plugin.getAccountController().createAccount(player.getUniqueId(), player.getName());
@@ -73,17 +79,21 @@ public class PlayerListener implements Listener {
     // Handles the player experience change event
     @EventHandler
     public void onExpChange(final PlayerExpChangeEvent event) {
-        final Player player = event.getPlayer();
-        final int amount = event.getAmount();
+        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
 
-        // Disable vanilla calculation
-        event.setAmount(0);
+        if (currencyConfig.getType().equals("exp")) {
+            final Player player = event.getPlayer();
+            final int amount = event.getAmount();
 
-        this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
-            account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+            // Disable vanilla calculation
+            event.setAmount(0);
 
-            this.plugin.getAccountController().updateExp(player);
-        });
+            this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
+                account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+
+                this.plugin.getAccountController().updateExp(player);
+            });
+        }
     }
 
 }
