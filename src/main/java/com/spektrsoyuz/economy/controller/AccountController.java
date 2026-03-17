@@ -5,6 +5,7 @@ import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Account;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
@@ -135,10 +136,15 @@ public final class AccountController {
             final long currentExp = account.getBalance().longValue();
             final int levelCost = Constants.LEVEL_COST;
 
-            final int level = (int) (currentExp / levelCost);
+            final int newLevel = (int) (currentExp / levelCost);
             final float progress = (float) (currentExp % levelCost) / levelCost;
 
-            player.setLevel(level);
+            if (newLevel > player.getLevel()) {
+                // Play level up sound
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+            }
+
+            player.setLevel(newLevel);
             player.setExp(progress);
         });
     }
