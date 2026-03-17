@@ -8,6 +8,11 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+/**
+ * Model class for an economy account.
+ *
+ * @since 1.0.0
+ */
 @Getter
 public final class Account {
 
@@ -31,8 +36,8 @@ public final class Account {
         this.balance = balance;
         this.frozen = frozen != null && frozen;
 
-        this.accountConsumer = null; // TODO plugin.getAccountQueueTask()::queue;
-        this.transactionConsumer = null; // TODO plugin.getTransactionQueueTask()::queue;
+        this.accountConsumer = plugin.getAccountQueueTask()::queue;
+        this.transactionConsumer = plugin.getTransactionQueueTask()::queue;
 
         this.saveAccount();
     }

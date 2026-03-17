@@ -7,8 +7,17 @@ package com.spektrsoyuz.economy;
  */
 public final class Constants {
 
+    public static final String PLUGIN_NAME = "economy";
+
     // Config paths
     public static final String CONFIG_PRIMARY = "config.conf";
     public static final String CONFIG_MESSAGES = "messages.conf";
+
+    // Command permissions
+    public static final String PERMISSION_ADMIN = "economy.admin";
+    public static final String PERMISSION_COMMAND_BALANCE = "economy.balance";
+    public static final String PERMISSION_COMMAND_BALANCE_ALL = "economy.balance.all";
+    public static final String PERMISSION_COMMAND_BALANCE_OTHER = "economy.balance.other";
+    public static final String PERMISSION_COMMAND_PAY = "economy.pay";
 
 }
