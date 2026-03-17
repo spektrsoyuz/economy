@@ -1,7 +1,7 @@
 package com.spektrsoyuz.economy.command;
 
 import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.spektrsoyuz.economy.Constants;
@@ -37,7 +37,7 @@ public final class EconomyCommand {
         final var add = Commands.literal("add")
                 .then(Commands.argument("name", StringArgumentType.word())
                         .suggests(new AccountSuggestionProvider(this.plugin))
-                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                        .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0))
                                 .executes(this::add)));
 
         // /economy create <name>
@@ -71,14 +71,14 @@ public final class EconomyCommand {
         final var set = Commands.literal("set")
                 .then(Commands.argument("name", StringArgumentType.word())
                         .suggests(new AccountSuggestionProvider(this.plugin))
-                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                        .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0))
                                 .executes(this::set)));
 
         // /economy subtract <name> <amount>
         final var subtract = Commands.literal("subtract")
                 .then(Commands.argument("name", StringArgumentType.word())
                         .suggests(new AccountSuggestionProvider(this.plugin))
-                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                        .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0))
                                 .executes(this::subtract)));
 
         // /economy unfreeze <name>
@@ -108,7 +108,7 @@ public final class EconomyCommand {
     private int add(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
         final String accountName = ctx.getArgument("name", String.class);
-        final int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        final double amount = DoubleArgumentType.getDouble(ctx, "amount");
         final BigDecimal amountBD = BigDecimal.valueOf(amount);
 
         // Check if account exists
@@ -257,7 +257,7 @@ public final class EconomyCommand {
     private int set(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
         final String accountName = ctx.getArgument("name", String.class);
-        final int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        final double amount = DoubleArgumentType.getDouble(ctx, "amount");
         final BigDecimal amountBD = BigDecimal.valueOf(amount);
 
         // Check if account exists
@@ -288,7 +288,7 @@ public final class EconomyCommand {
     private int subtract(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
         final String accountName = ctx.getArgument("name", String.class);
-        final int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        final double amount = DoubleArgumentType.getDouble(ctx, "amount");
         final BigDecimal amountBD = BigDecimal.valueOf(amount);
 
         // Check if account exists

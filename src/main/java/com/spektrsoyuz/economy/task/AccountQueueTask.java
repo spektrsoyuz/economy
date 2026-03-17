@@ -3,6 +3,7 @@ package com.spektrsoyuz.economy.task;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Account;
 import lombok.RequiredArgsConstructor;
+import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +22,12 @@ public final class AccountQueueTask implements Runnable {
     // Adds an account to the queue
     public void queue(final Account account) {
         this.queue.add(account.getId());
+
+        // Sync XP bar
+        final Player player = this.plugin.getServer().getPlayer(account.getId());
+        if (player != null) {
+            this.plugin.getAccountController().updateExp(player);
+        }
 
         if (this.plugin.getConfigController().getOptionsConfig().isDebug()) {
             this.plugin.getComponentLogger().debug("Added account '{}:{}' to the queue",

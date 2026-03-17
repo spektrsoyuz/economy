@@ -1,5 +1,6 @@
 package com.spektrsoyuz.economy.listener;
 
+import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Transactor;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
@@ -7,8 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLevelChangeEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.math.BigDecimal;
@@ -80,20 +83,54 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onExpChange(final PlayerExpChangeEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+        if (!currencyConfig.getType().equals("exp")) return;
 
-        if (currencyConfig.getType().equals("exp")) {
-            final Player player = event.getPlayer();
-            final int amount = event.getAmount();
+        final Player player = event.getPlayer();
+        final int amount = event.getAmount();
 
-            // Disable vanilla calculation
-            event.setAmount(0);
+        // Disable vanilla XP gain
+        event.setAmount(0);
 
-            this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
-                account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+        if (amount <= 0) return;
 
-                this.plugin.getAccountController().updateExp(player);
-            });
-        }
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
+            // Convert raw XP points to a fraction of a level
+            final double levelGain = (double) amount / Constants.LEVEL_COST;
+
+            account.addBalance(BigDecimal.valueOf(levelGain), Transactor.SERVER);
+        });
+    }
+
+    @EventHandler
+    public void onLevelChange(final PlayerLevelChangeEvent event) {
+        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+        if (!currencyConfig.getType().equals("exp")) return;
+
+        final Player player = event.getPlayer();
+        final int oldLevel = event.getOldLevel();
+        final int newLevel = event.getNewLevel();
+
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
+            final int expectedLevel = account.getBalance().intValue();
+            if (newLevel == expectedLevel) {
+                return;
+            }
+
+            // Check if the level changed
+            if (newLevel < oldLevel && !player.isDead()) {
+                final int levelsSpent = oldLevel - newLevel;
+
+                account.subtractBalance(BigDecimal.valueOf(levelsSpent), Transactor.SERVER);
+            }
+        });
+    }
+
+    @EventHandler
+    public void onPlayerDeath(final PlayerDeathEvent event) {
+        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+        if (!currencyConfig.getType().equals("exp")) return;
+
+        event.setDroppedExp(0);
     }
 
 }
