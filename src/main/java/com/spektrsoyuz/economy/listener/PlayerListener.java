@@ -9,10 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerExpChangeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLevelChangeEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
 
 import java.math.BigDecimal;
 
@@ -31,7 +28,6 @@ public class PlayerListener implements Listener {
         this.plugin.getServer().getPluginManager().registerEvents(this, this.plugin);
     }
 
-    // Handles the player join event
     @EventHandler
     public void onPlayerJoin(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
@@ -62,7 +58,6 @@ public class PlayerListener implements Listener {
         });
     }
 
-    // Handles the player quit event
     @EventHandler
     public void onPlayerQuit(final PlayerQuitEvent event) {
         final Player player = event.getPlayer();
@@ -79,7 +74,6 @@ public class PlayerListener implements Listener {
         });
     }
 
-    // Handles the player experience change event
     @EventHandler
     public void onExpChange(final PlayerExpChangeEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
@@ -131,6 +125,16 @@ public class PlayerListener implements Listener {
         if (!currencyConfig.getType().equals("exp")) return;
 
         event.setDroppedExp(0);
+        event.setKeepLevel(true);
+    }
+
+    @EventHandler
+    public void onPlayerRespawn(final PlayerRespawnEvent event) {
+        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+        if (!currencyConfig.getType().equals("exp")) return;
+
+        // Sync XP bar
+        this.plugin.getAccountController().updateExp(event.getPlayer());
     }
 
 }
