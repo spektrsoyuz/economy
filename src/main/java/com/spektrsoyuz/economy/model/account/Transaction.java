@@ -1,4 +1,4 @@
-package com.spektrsoyuz.economy.model;
+package com.spektrsoyuz.economy.model.account;
 
 import java.math.BigDecimal;
 import java.util.UUID;
