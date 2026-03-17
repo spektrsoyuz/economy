@@ -1,12 +1,16 @@
 package com.spektrsoyuz.economy.listener;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
+import com.spektrsoyuz.economy.model.account.Transactor;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+
+import java.math.BigDecimal;
 
 /**
  * Listener class for player events.
@@ -38,6 +42,7 @@ public class PlayerListener implements Listener {
             }
 
             this.plugin.getAccountController().addPlayerAccount(account);
+            this.plugin.getAccountController().updateExp(player);
         }, () -> {
             // Create new account for player
             this.plugin.getAccountController().createAccount(player.getUniqueId(), player.getName());
@@ -62,6 +67,22 @@ public class PlayerListener implements Listener {
                     player.getUniqueId(),
                     player.getName()
             );
+        });
+    }
+
+    // Handles the player experience change event
+    @EventHandler
+    public void onExpChange(final PlayerExpChangeEvent event) {
+        final Player player = event.getPlayer();
+        final int amount = event.getAmount();
+
+        // Disable vanilla calculation
+        event.setAmount(0);
+
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
+            account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+
+            this.plugin.getAccountController().updateExp(player);
         });
     }
 

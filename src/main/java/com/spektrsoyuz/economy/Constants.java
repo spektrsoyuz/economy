@@ -8,6 +8,7 @@ package com.spektrsoyuz.economy;
 public final class Constants {
 
     public static final String PLUGIN_NAME = "economy";
+    public static final int LEVEL_COST = 100;
 
     // Config paths
     public static final String CONFIG_PRIMARY = "config.conf";

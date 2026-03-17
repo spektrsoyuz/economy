@@ -1,5 +1,6 @@
 package com.spektrsoyuz.economy.controller;
 
+import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Account;
 import lombok.Getter;
@@ -126,6 +127,20 @@ public final class AccountController {
     // Removes a player account
     public void removePlayerAccount(final Account account) {
         this.onlineAccounts.remove(account.getId());
+    }
+
+    // Updates a player's experience to match their economy account
+    public void updateExp(final Player player) {
+        this.getPlayerAccount(player).ifPresent(account -> {
+            final long currentExp = account.getBalance().longValue();
+            final int levelCost = Constants.LEVEL_COST;
+
+            final int level = (int) (currentExp / levelCost);
+            final float progress = (float) (currentExp % levelCost) / levelCost;
+
+            player.setLevel(level);
+            player.setExp(progress);
+        });
     }
 
 }

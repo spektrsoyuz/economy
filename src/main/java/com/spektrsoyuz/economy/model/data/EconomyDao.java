@@ -4,7 +4,7 @@ import com.spektrsoyuz.economy.model.account.Account;
 import com.spektrsoyuz.economy.model.account.Transaction;
 import org.jdbi.v3.sqlobject.config.RegisterConstructorMapper;
 import org.jdbi.v3.sqlobject.customizer.Bind;
-import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.customizer.BindMethods;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
@@ -44,16 +44,16 @@ public interface EconomyDao {
             VALUES (:id, :name, :balance, :frozen)
             ON DUPLICATE KEY UPDATE name = :name, balance = :balance, frozen = :frozen
             """)
-    void saveAccount(@BindBean Account.Memento account);
+    void saveAccount(@BindMethods Account.Memento account);
 
     @SqlUpdate("""
             INSERT INTO economy_transactions (account, actor, name, amount)
-            VALUES (:account, :transactor, :name, :amount)
+            VALUES (:accountId, :transactor, :accountName, :amount)
             """)
-    void saveTransaction(@BindBean Transaction transaction);
+    void saveTransaction(@BindMethods Transaction transaction);
 
     @SqlUpdate("DELETE FROM economy_accounts WHERE id = :id")
-    void deleteAccount(@Bind("accountId") String id);
+    void deleteAccount(@Bind("id") String id);
 
     @SqlUpdate("DELETE FROM economy_accounts WHERE timestamp < DATE_SUB(NOW(), INTERVAL :days DAY)")
     void expireAccounts(@Bind("days") int days);
@@ -63,11 +63,11 @@ public interface EconomyDao {
 
     @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts WHERE id = :id")
     @RegisterConstructorMapper(Account.Memento.class)
-    Optional<Account.Memento> getAccountById(@Bind("accountId") String id);
+    Optional<Account.Memento> getAccountById(@Bind("id") String id);
 
     @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts WHERE name = :name")
     @RegisterConstructorMapper(Account.Memento.class)
-    Optional<Account.Memento> getAccountByName(@Bind("accountName") String name);
+    Optional<Account.Memento> getAccountByName(@Bind("name") String name);
 
     @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts")
     @RegisterConstructorMapper(Account.Memento.class)

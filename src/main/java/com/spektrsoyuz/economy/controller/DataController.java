@@ -5,6 +5,7 @@ import com.spektrsoyuz.economy.model.account.Account;
 import com.spektrsoyuz.economy.model.account.Transaction;
 import com.spektrsoyuz.economy.model.config.OptionsConfig;
 import com.spektrsoyuz.economy.model.config.StorageConfig;
+import com.spektrsoyuz.economy.model.data.EconomyArgumentFactory;
 import com.spektrsoyuz.economy.model.data.EconomyDao;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -47,6 +48,8 @@ public final class DataController {
             this.plugin.getServer().getPluginManager().disablePlugin(this.plugin);
             return;
         }
+
+        this.jdbi.registerArgument(new EconomyArgumentFactory());
 
         this.jdbi.useExtension(EconomyDao.class, dao -> {
             dao.createAccountsTable();

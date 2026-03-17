@@ -4,8 +4,8 @@ import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Transaction;
 import lombok.RequiredArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Asynchronous task for saving transactions.
@@ -16,7 +16,7 @@ import java.util.List;
 public final class TransactionQueueTask implements Runnable {
 
     private final EconomyPlugin plugin;
-    private final List<Transaction> queue = new ArrayList<>();
+    private final Queue<Transaction> queue = new ConcurrentLinkedQueue<>();
 
     // Adds a transaction to the queue
     public void queue(final Transaction transaction) {
@@ -33,14 +33,20 @@ public final class TransactionQueueTask implements Runnable {
     @Override
     public void run() {
         // Save transactions to database
-        for (final Transaction transaction : queue) {
-            this.plugin.getDataController().saveTransaction(transaction);
+        Transaction transaction;
 
-            if (this.plugin.getConfigController().getOptionsConfig().isDebug()) {
-                this.plugin.getComponentLogger().warn("Saved transaction for account '{}:{}' to the database",
-                        transaction.accountId(),
-                        transaction.accountName()
-                );
+        while ((transaction = queue.poll()) != null) {
+            try {
+                this.plugin.getDataController().saveTransaction(transaction);
+
+                if (this.plugin.getConfigController().getOptionsConfig().isDebug()) {
+                    this.plugin.getComponentLogger().warn("Saved transaction for account '{}:{}' to the database",
+                            transaction.accountId(),
+                            transaction.accountName()
+                    );
+                }
+            } catch (final Exception e) {
+                this.plugin.getComponentLogger().error("Failed to save transaction", e);
             }
         }
 
