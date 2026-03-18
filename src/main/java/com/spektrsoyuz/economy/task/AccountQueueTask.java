@@ -1,7 +1,9 @@
 package com.spektrsoyuz.economy.task;
 
 import com.spektrsoyuz.economy.EconomyPlugin;
+import com.spektrsoyuz.economy.model.CurrencyType;
 import com.spektrsoyuz.economy.model.account.Account;
+import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.entity.Player;
 
@@ -25,7 +27,10 @@ public final class AccountQueueTask implements Runnable {
 
         // Sync XP bar
         final Player player = this.plugin.getServer().getPlayer(account.getId());
-        if (player != null) {
+        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+
+        if (player != null && currencyConfig.getType() == CurrencyType.EXP) {
+            // Sync XP bar
             this.plugin.getAccountController().updateExp(player);
         }
 
