@@ -3,10 +3,10 @@ package com.spektrsoyuz.economy.model.config;
 import com.spektrsoyuz.economy.model.CurrencyType;
 import lombok.Getter;
 import org.bukkit.Material;
-import org.bukkit.inventory.ItemType;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * Model class for the currency config.
@@ -15,7 +15,6 @@ import java.math.BigDecimal;
  */
 @Getter
 @ConfigSerializable
-@SuppressWarnings("UnstableApiUsage")
 public final class CurrencyConfig {
 
     private final String name;
@@ -24,7 +23,7 @@ public final class CurrencyConfig {
     private final double startingBalance;
     private final String symbol;
     private final String type;
-    private final String item;
+    private final Map<String, Integer> items;
 
     // Constructor
     public CurrencyConfig() {
@@ -34,7 +33,7 @@ public final class CurrencyConfig {
         this.startingBalance = 0.0;
         this.symbol = "";
         this.type = "default";
-        this.item = "minecraft:gold_ingot";
+        this.items = Map.of("minecraft:gold_ingot", 1, "minecraft:gold_block", 9);
     }
 
     // Gets the starting balance for new accounts
@@ -47,15 +46,16 @@ public final class CurrencyConfig {
         return CurrencyType.valueOf(this.type.toUpperCase());
     }
 
-    // Gets the item type
-    public ItemType getItem() {
-        final Material material = Material.matchMaterial(this.item);
+    /**
+     * Gets the value of a specific Material.
+     *
+     * @return the value, or 0 if not a valid item
+     */
+    public int getItemValue(final Material material) {
+        if (material == null) return 0;
 
-        if (material == null) {
-            return ItemType.GOLD_INGOT;
-        }
-
-        return material.asItemType();
+        final String key = material.getKey().getKey().toLowerCase();
+        return items.getOrDefault(key, 0);
     }
 
 }

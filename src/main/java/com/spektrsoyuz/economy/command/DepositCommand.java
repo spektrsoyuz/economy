@@ -10,15 +10,18 @@ import com.spektrsoyuz.economy.model.account.Transactor;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import io.papermc.paper.entity.PlayerGiveResult;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Model class for the /deposit command.
@@ -57,23 +60,29 @@ public final class DepositCommand {
             return 0;
         }
 
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        int totalInInventory = 0;
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        int totalValueInInventory = 0;
 
         // Calculate total physical currency in inventory
         for (final ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.getType().asItemType() == currencyConfig.getItem()) {
-                totalInInventory += item.getAmount();
+            if (item == null || item.getType().isAir()) continue;
+
+            int valuePerItem = config.getItemValue(item.getType());
+            if (valuePerItem > 0) {
+                totalValueInInventory += (valuePerItem * item.getAmount());
             }
         }
 
-        if (totalInInventory <= 0) {
-            player.sendMessage(this.plugin.getConfigController().getMessage("error-no-items-to-deposit", this.plugin.getMiniMessage()));
+        // Check if player has enough items to deposit
+        if (totalValueInInventory <= 0) {
+            player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance", this.plugin.getMiniMessage()));
+
+            EconomyUtils.playErrorSound(player);
             return 0;
         }
 
         // Process transaction
-        return this.handleTransaction(player, totalInInventory, currencyConfig);
+        return this.handleTransaction(player, totalValueInInventory, config);
     }
 
     // Executes the command
@@ -96,46 +105,88 @@ public final class DepositCommand {
     // Handles the deposit transaction
     private int handleTransaction(final Player player, final int amount, final CurrencyConfig currencyConfig) {
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
+            // Calculate total value available in inventory
+            long totalValueInInventory = 0;
+            for (final ItemStack item : player.getInventory().getContents()) {
+                if (item == null || item.getType().isAir()) continue;
+                int value = currencyConfig.getItemValue(item.getType());
 
-            // Check if player has enough items
-            if (!player.getInventory().containsAtLeast(currencyConfig.getItem().createItemStack(), amount)) {
+                if (value > 0) {
+                    totalValueInInventory += (long) value * item.getAmount();
+                }
+            }
+
+            // Check if player has enough value
+            if (totalValueInInventory < amount) {
                 player.sendMessage(this.plugin.getConfigController().getMessage(
-                        "error-not-enough-items",
-                        this.plugin.getMiniMessage(),
-                        Placeholder.parsed("required", String.valueOf(amount))
+                        "error-not-enough-balance",
+                        this.plugin.getMiniMessage()
                 ));
+
+                EconomyUtils.playErrorSound(player);
                 return;
             }
 
-            // Remove items from inventory
-            int remainingToRemove = amount;
-            final ItemStack[] contents = player.getInventory().getContents();
+            // Sort currencies by value
+            final List<SlotValue> currencySlots = new ArrayList<>();
 
-            for (int i = 0; i < contents.length; i++) {
-                final ItemStack item = contents[i];
-                if (item != null && item.getType().asItemType() == currencyConfig.getItem()) {
-                    final int stackAmount = item.getAmount();
+            // Iterate over player inventory
+            for (int i = 0; i < player.getInventory().getSize(); i++) {
+                final ItemStack item = player.getInventory().getItem(i);
+                if (item == null) continue;
+                int val = currencyConfig.getItemValue(item.getType());
 
-                    if (stackAmount <= remainingToRemove) {
-                        remainingToRemove -= stackAmount;
-                        player.getInventory().setItem(i, null);
-                    } else {
-                        item.setAmount(stackAmount - remainingToRemove);
-                        remainingToRemove = 0;
-                    }
+                if (val > 0) {
+                    currencySlots.add(new SlotValue(i, val));
                 }
-
-                if (remainingToRemove <= 0) break;
             }
 
-            // Add to account balance
-            final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
-            boolean success = account.addBalance(amountDecimal, Transactor.SERVER);
+            // Sort higher valued items first
+            currencySlots.sort((a, b) -> Integer.compare(b.valuePerItem(), a.valuePerItem()));
 
-            // Handle transaction failure
+            // Remove value from inventory
+            int remainingValueToRemove = amount;
+
+            for (final SlotValue entry : currencySlots) {
+                if (remainingValueToRemove <= 0) break;
+
+                ItemStack item = player.getInventory().getItem(entry.slot());
+                if (item == null) continue;
+
+                int stackValue = entry.valuePerItem() * item.getAmount();
+
+                if (stackValue <= remainingValueToRemove) {
+                    // Remove the entire stack
+                    remainingValueToRemove -= stackValue;
+                    player.getInventory().setItem(entry.slot(), null);
+                } else {
+                    // Only remove a portion of the stack
+                    final int itemsToTake = (int) Math.ceil((double) remainingValueToRemove / entry.valuePerItem());
+                    final int totalValueTaken = itemsToTake * entry.valuePerItem();
+                    final int changeDue = totalValueTaken - remainingValueToRemove;
+
+                    item.setAmount(item.getAmount() - itemsToTake);
+                    remainingValueToRemove = 0;
+
+                    // Provide change if the item value was greater than the remaining debt
+                    if (changeDue > 0) {
+                        this.refundValue(player, currencyConfig, changeDue);
+                    }
+                }
+            }
+
+            // Update account balance
+            final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
+            final boolean success = account.addBalance(amountDecimal, Transactor.SERVER);
+
+            // Check if transaction failed
             if (!success) {
-                this.refundItems(player, currencyConfig, amount);
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-transaction-failed", this.plugin.getMiniMessage()));
+                // Refund items to play
+                this.refundValue(player, currencyConfig, amount);
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-transaction-failed",
+                        this.plugin.getMiniMessage()
+                ));
 
                 EconomyUtils.playErrorSound(player);
                 return;
@@ -154,7 +205,7 @@ public final class DepositCommand {
 
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }, () -> {
-            // Account not found
+            // No account found
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     "error-account-not-found",
                     this.plugin.getMiniMessage()
@@ -165,27 +216,38 @@ public final class DepositCommand {
     }
 
     // Refunds items to the player if the transaction fails
-    private void refundItems(final Player player, final CurrencyConfig config, final int amount) {
-        int remainingToRefund = amount;
-        final int maxStack = config.getItem().createItemStack().getMaxStackSize();
+    private void refundValue(final Player player, final CurrencyConfig config, final int totalValue) {
+        int remainingToRefund = totalValue;
 
-        // Iterate over remaining items
-        while (remainingToRefund > 0) {
-            final int toGive = Math.min(remainingToRefund, maxStack);
-            final ItemStack itemStack = config.getItem().createItemStack(toGive);
+        // Get currency items sorted by value descending
+        final List<Map.Entry<String, Integer>> sortedItems = new ArrayList<>(config.getItems().entrySet());
+        sortedItems.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
 
-            // Give item to player
-            final PlayerGiveResult result = player.give(itemStack);
+        for (final Map.Entry<String, Integer> entry : sortedItems) {
+            if (remainingToRefund <= 0) break;
 
-            if (!result.leftovers().isEmpty()) {
-                for (final ItemStack leftover : result.leftovers()) {
-                    // Drop leftovers
+            final Material material = Material.matchMaterial(entry.getKey());
+            if (material == null) continue;
+
+            final int itemValue = entry.getValue();
+            final int countToGive = remainingToRefund / itemValue;
+
+            if (countToGive > 0) {
+                final ItemStack stack = new ItemStack(material, countToGive);
+
+                // Give items to player
+                player.getInventory().addItem(stack).values().forEach(leftover -> {
+                    // Drop remaining items
                     player.getWorld().dropItem(player.getLocation(), leftover);
-                }
-            }
+                });
 
-            remainingToRefund -= toGive;
+                remainingToRefund %= itemValue;
+            }
         }
+    }
+
+    // Model record for the value of an inventory slot
+    private record SlotValue(int slot, int valuePerItem) {
     }
 
 }

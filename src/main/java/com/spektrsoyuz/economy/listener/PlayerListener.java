@@ -9,7 +9,6 @@ import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import com.spektrsoyuz.economy.model.config.OptionsConfig;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -238,30 +237,34 @@ public class PlayerListener implements Listener {
         if (!event.getAction().isRightClick()) return;
         if (!event.getPlayer().isSneaking()) return;
 
-        // Validate item type for currency mode
-        final boolean isValid = switch (config.getType()) {
-            case EXP -> item.getType() == Material.EXPERIENCE_BOTTLE;
-            case ITEM -> item.getType().asItemType() == config.getItem();
-            default -> false;
-        };
+        // Handle experience currency type
+        if (config.getType() == CurrencyType.EXP) {
+            this.processItemExchange(event, item, config, 1);
+            return;
+        }
 
-        if (isValid) {
-            // Handle currency conversion
-            this.processItemExchange(event, item, config);
+        // Handle item currency type
+        if (config.getType() == CurrencyType.ITEM) {
+            final int valuePerItem = config.getItemValue(item.getType());
+            if (valuePerItem > 0) {
+                this.processItemExchange(event, item, config, valuePerItem);
+            }
         }
     }
 
     // Handles currency conversion
-    private void processItemExchange(final PlayerInteractEvent event, final ItemStack item, final CurrencyConfig config) {
+    private void processItemExchange(final PlayerInteractEvent event, final ItemStack item, final CurrencyConfig config, final int valuePerItem) {
         final Player player = event.getPlayer();
 
         this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
             event.setCancelled(true);
 
             // Handle transaction
-            final int amount = item.getAmount();
-            final BigDecimal value = BigDecimal.valueOf(amount);
-            final boolean success = account.addBalance(value, Transactor.SERVER);
+            final int count = item.getAmount();
+            final int totalValue = count * valuePerItem;
+            final BigDecimal valueBD = BigDecimal.valueOf(totalValue);
+
+            final boolean success = account.addBalance(valueBD, Transactor.SERVER);
 
             if (!success) {
                 this.handleTransactionFailure(player);
@@ -275,8 +278,8 @@ public class PlayerListener implements Listener {
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     String.format("economy-%s-deposit", config.getType().name().toLowerCase()),
                     this.plugin.getMiniMessage(),
-                    Placeholder.parsed("amount", String.valueOf(amount)),
-                    Placeholder.parsed("currency", EconomyUtils.format(this.plugin, value))
+                    Placeholder.parsed("amount", String.valueOf(totalValue)),
+                    Placeholder.parsed("currency", EconomyUtils.format(this.plugin, valueBD))
             ));
 
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
