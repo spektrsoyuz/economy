@@ -64,9 +64,11 @@ public final class BottleCommand {
             final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
             final String currency = EconomyUtils.format(this.plugin, amountDecimal);
 
-            // Give items to player
+            // Subtract amount from player account
+            account.subtractBalance(amountDecimal, Transactor.SERVER);
+
+            // Give XP bottles to player
             final ItemStack itemStack = ItemType.EXPERIENCE_BOTTLE.createItemStack(amount);
-            player.give(itemStack);
 
             final PlayerGiveResult result = player.give(itemStack);
             if (!result.leftovers().isEmpty()) {
@@ -74,9 +76,6 @@ public final class BottleCommand {
                     player.getWorld().dropItem(player.getLocation(), droppedItem);
                 }
             }
-
-            // Subtract amount from player account
-            account.subtractBalance(amountDecimal, Transactor.SERVER);
 
             // Send message to player
             player.sendMessage(this.plugin.getConfigController().getMessage(
