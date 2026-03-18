@@ -141,35 +141,23 @@ public final class EconomyController {
     }
 
     // Handles a withdrawal transaction
-    public int handleWithdrawal(final Player player, final int amount, final CurrencyConfig config) {
+    public int handleWithdrawal(final Player player, final int requestedAmount, final CurrencyConfig config) {
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
-            final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
+            final BigDecimal currentBalance = account.getBalance();
 
-            // Check account balance
-            if (account.getBalance().compareTo(amountDecimal) < 0) {
+            // Determine how much value can be withdrawn
+            final int availableSpace = this.calculateAvailableSpace(player, config);
+            final int balanceInt = currentBalance.intValue();
+            final int actualWithdrawAmount = Math.min(requestedAmount, Math.min(balanceInt, availableSpace));
+
+            // Error handling for edge cases
+            if (actualWithdrawAmount <= 0) {
+                final String errorKey = (balanceInt <= 0)
+                        ? "error-not-enough-balance"
+                        : "error-not-enough-inventory-space";
+
                 player.sendMessage(this.plugin.getConfigController().getMessage(
-                        "error-not-enough-balance",
-                        this.plugin.getMiniMessage(),
-                        Placeholder.parsed("currency", config.getNamePlural())
-                ));
-                return;
-            }
-
-            // Check inventory space (value-based)
-            if (this.calculateAvailableSpace(player, config) < amount) {
-                player.sendMessage(this.plugin.getConfigController().getMessage(
-                        "error-not-enough-inventory-space",
-                        this.plugin.getMiniMessage()
-                ));
-                return;
-            }
-
-            // Subtract amount from player account
-            boolean success = account.subtractBalance(amountDecimal, Transactor.SERVER);
-
-            if (!success) {
-                player.sendMessage(this.plugin.getConfigController().getMessage(
-                        "error-transaction-failed",
+                        errorKey,
                         this.plugin.getMiniMessage()
                 ));
 
@@ -177,23 +165,36 @@ public final class EconomyController {
                 return;
             }
 
-            // Handle item distribution
-            EconomyUtils.distributeItems(player, config, amount);
+            // Subtract the partial/full amount from player account
+            final BigDecimal amountToSubtract = BigDecimal.valueOf(actualWithdrawAmount);
+            final boolean success = account.subtractBalance(amountToSubtract, Transactor.SERVER);
+
+            if (!success) {
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-transaction-failed",
+                        this.plugin.getMiniMessage()
+                ));
+                EconomyUtils.playErrorSound(player);
+                return;
+            }
+
+            // Distribute items
+            EconomyUtils.distributeItems(player, config, actualWithdrawAmount);
 
             // Send message to player
-            final String currencyFormatted = EconomyUtils.format(this.plugin, amountDecimal);
+            final String currencyFormatted = EconomyUtils.format(this.plugin, amountToSubtract);
             final String messageKey = String.format("economy-%s-withdraw", config.getType().name().toLowerCase());
 
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     messageKey,
                     this.plugin.getMiniMessage(),
-                    Placeholder.parsed("amount", String.valueOf(amount)),
+                    Placeholder.parsed("amount", String.valueOf(actualWithdrawAmount)),
                     Placeholder.parsed("currency", currencyFormatted)
             ));
 
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }, () -> {
-            // Account not found
+            // No account found
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     "error-account-not-found",
                     this.plugin.getMiniMessage()
