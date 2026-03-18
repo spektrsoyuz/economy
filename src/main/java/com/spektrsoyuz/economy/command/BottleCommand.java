@@ -12,6 +12,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.entity.PlayerGiveResult;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -59,25 +60,61 @@ public final class BottleCommand {
         }
 
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
-            // Account found for player
+            // Account found
             final int amount = ctx.getArgument("amount", Integer.class);
             final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
             final String currency = EconomyUtils.format(this.plugin, amountDecimal);
+            final int maxStackSize = 64;
+
+            if (account.getBalance().compareTo(amountDecimal) < 0) {
+                // Not enough balance
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "not-enough-balance",
+                        this.plugin.getMiniMessage()
+                ));
+                return;
+            }
+
+            // Calculate inventory space
+            int totalSpaceAvailable = 0;
+            for (ItemStack item : player.getInventory().getContents()) {
+                if (item == null || item.getType().isAir()) {
+                    totalSpaceAvailable += maxStackSize;
+                } else if (item.getType() == Material.EXPERIENCE_BOTTLE) {
+                    totalSpaceAvailable += (maxStackSize - item.getAmount());
+                }
+            }
+
+            if (totalSpaceAvailable < amount) {
+                // Not enough inventory space
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-not-enough-inventory-space",
+                        this.plugin.getMiniMessage()
+                ));
+                return;
+            }
 
             // Subtract amount from player account
             account.subtractBalance(amountDecimal, Transactor.SERVER);
 
-            // Give XP bottles to player
-            final ItemStack itemStack = ItemType.EXPERIENCE_BOTTLE.createItemStack(amount);
+            // Handle item distribution
+            int remainingToGive = amount;
+            while (remainingToGive > 0) {
+                final int currentStackSize = Math.min(remainingToGive, maxStackSize);
+                final ItemStack itemStack = ItemType.EXPERIENCE_BOTTLE.createItemStack(currentStackSize);
 
-            final PlayerGiveResult result = player.give(itemStack);
-            if (!result.leftovers().isEmpty()) {
-                for (final ItemStack droppedItem : result.leftovers()) {
-                    player.getWorld().dropItem(player.getLocation(), droppedItem);
+                // Give item to the player
+                final PlayerGiveResult result = player.give(itemStack);
+                if (!result.leftovers().isEmpty()) {
+                    for (final ItemStack droppedItem : result.leftovers()) {
+                        player.getWorld().dropItem(player.getLocation(), droppedItem);
+                    }
                 }
+
+                remainingToGive -= currentStackSize;
             }
 
-            // Send message to player
+            // Send success message to player
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     "economy-exp-store",
                     this.plugin.getMiniMessage(),
