@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
+import com.spektrsoyuz.economy.model.account.Transactor;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.entity.PlayerGiveResult;
@@ -15,6 +16,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ItemType;
+
+import java.math.BigDecimal;
 
 /**
  * Model class for the /bottle command.
@@ -57,8 +60,9 @@ public final class BottleCommand {
 
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
             // Account found for player
-            final String currency = EconomyUtils.format(this.plugin, account.getBalance());
             final int amount = ctx.getArgument("amount", Integer.class);
+            final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
+            final String currency = EconomyUtils.format(this.plugin, amountDecimal);
 
             // Give items to player
             final ItemStack itemStack = ItemType.EXPERIENCE_BOTTLE.createItemStack(amount);
@@ -70,6 +74,9 @@ public final class BottleCommand {
                     player.getWorld().dropItem(player.getLocation(), droppedItem);
                 }
             }
+
+            // Subtract amount from player account
+            account.subtractBalance(amountDecimal, Transactor.SERVER);
 
             // Send message to player
             player.sendMessage(this.plugin.getConfigController().getMessage(
