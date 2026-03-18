@@ -221,9 +221,17 @@ public final class EconomyCommand {
         this.plugin.getConfigController().load();
 
         // Reload config
-        final String key = this.plugin.getConfigController().isLoaded()
+        final boolean success = this.plugin.getConfigController().isLoaded();
+        final String key = success
                 ? "command-economy-reload-success"
                 : "command-economy-reload-fail";
+
+        // Send message to console
+        if (success) {
+            this.plugin.getComponentLogger().info("Config has been reloaded");
+        } else {
+            this.plugin.getComponentLogger().error("Failed to reload config");
+        }
 
         // Send message to sender
         sender.sendMessage(this.plugin.getConfigController().getMessage(
