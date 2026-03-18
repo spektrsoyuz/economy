@@ -7,6 +7,7 @@ import com.spektrsoyuz.economy.command.PayCommand;
 import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
+import com.spektrsoyuz.economy.listener.EntityListener;
 import com.spektrsoyuz.economy.listener.PlayerListener;
 import com.spektrsoyuz.economy.model.vault.EconomyImpl;
 import com.spektrsoyuz.economy.model.vault.LegacyEconomyImpl;
@@ -94,6 +95,7 @@ public final class EconomyPlugin extends JavaPlugin {
 
     private void registerListeners() {
         // Register listeners
+        new EntityListener(this).register();
         new PlayerListener(this).register();
     }
 
