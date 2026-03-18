@@ -4,6 +4,7 @@ import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.model.CurrencyType;
+import com.spektrsoyuz.economy.model.account.Account;
 import com.spektrsoyuz.economy.model.account.Transactor;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import com.spektrsoyuz.economy.model.config.OptionsConfig;
@@ -13,7 +14,9 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
@@ -49,9 +52,9 @@ public class PlayerListener implements Listener {
 
             this.plugin.getAccountController().addPlayerAccount(account);
 
-            final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+            final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
 
-            if (currencyConfig.getType() == CurrencyType.EXP) {
+            if (config.getType() == CurrencyType.EXP) {
                 this.plugin.getAccountController().updateExp(player);
             }
         }, () -> {
@@ -82,8 +85,8 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onExpChange(final PlayerExpChangeEvent event) {
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (!(config.getType() == CurrencyType.EXP)) return;
 
         final Player player = event.getPlayer();
         final int amount = event.getAmount();
@@ -111,8 +114,8 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onLevelChange(final PlayerLevelChangeEvent event) {
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (!(config.getType() == CurrencyType.EXP)) return;
 
         final Player player = event.getPlayer();
         final int oldLevel = event.getOldLevel();
@@ -146,8 +149,8 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerDeath(final PlayerDeathEvent event) {
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (!(config.getType() == CurrencyType.EXP)) return;
 
         final Player player = event.getPlayer();
         event.setDroppedExp(0);
@@ -221,8 +224,8 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerRespawn(final PlayerRespawnEvent event) {
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (!(config.getType() == CurrencyType.EXP)) return;
 
         // Sync XP bar
         this.plugin.getAccountController().updateExp(event.getPlayer());
@@ -243,6 +246,69 @@ public class PlayerListener implements Listener {
             if (valuePerItem > 0) {
                 this.processItemExchange(event, item, config, valuePerItem);
             }
+        }
+    }
+
+    @EventHandler
+    public void onPickupItem(final EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+
+        if (config.getType() == CurrencyType.ITEM || config.getType() == CurrencyType.EXP) {
+            this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
+                // Account found
+                if (!account.isAutoDeposit()) return;
+
+                final ItemStack itemStack = event.getItem().getItemStack();
+                final int valuePerItem = config.getItemValue(itemStack.getType());
+
+                if (valuePerItem > 0) {
+                    // Cancel the item pickup and deposit the value instead
+                    event.setCancelled(true);
+                    event.getItem().remove();
+
+                    this.depositItem(player, account, itemStack, valuePerItem);
+                }
+            }, () -> {
+                // No account found
+                this.plugin.getComponentLogger().error(
+                        "Auto deposit on item pickup failed, account not found for player '{}'",
+                        player.getName()
+                );
+            });
+        }
+    }
+
+    @EventHandler
+    public void onInventoryMove(final InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+
+        if (config.getType() == CurrencyType.ITEM || config.getType() == CurrencyType.EXP) {
+            final ItemStack current = event.getCurrentItem();
+            if (current == null || current.getType().isAir()) return;
+
+            this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
+                // Account found
+                if (!account.isAutoDeposit()) return;
+
+                final int valuePerItem = config.getItemValue(current.getType());
+                if (valuePerItem > 0) {
+                    // Cancel the item move and deposit the value instead
+                    event.setCancelled(true);
+                    event.setCurrentItem(null);
+
+                    this.depositItem(player, account, current, valuePerItem);
+                }
+            }, () -> {
+                // No account found
+                this.plugin.getComponentLogger().error(
+                        "Auto deposit on item move failed, account not found for player '{}'",
+                        player.getName()
+                );
+            });
         }
     }
 
@@ -288,6 +354,36 @@ public class PlayerListener implements Listener {
         ));
 
         EconomyUtils.playErrorSound(player);
+    }
+
+    // Deposits an item into a player's account
+    private void depositItem(
+            Player player,
+            Account account,
+            ItemStack item,
+            int valuePerItem
+    ) {
+        final int count = item.getAmount();
+        final BigDecimal totalValue = BigDecimal.valueOf((long) count * valuePerItem);
+
+        final boolean success = account.addBalance(totalValue, Transactor.SERVER);
+
+        if (!success) {
+            // Transaction failed
+            this.handleTransactionFailure(player);
+            player.getWorld().dropItemNaturally(player.getLocation(), item);
+            return;
+        }
+
+        // Send message to player
+        player.sendActionBar(this.plugin.getConfigController().getMessage(
+                "command-deposit-auto",
+                this.plugin.getMiniMessage(),
+                Placeholder.parsed("amount", String.valueOf(count)),
+                Placeholder.parsed("currency", EconomyUtils.format(this.plugin, totalValue))
+        ));
+
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.5f);
     }
 
 }

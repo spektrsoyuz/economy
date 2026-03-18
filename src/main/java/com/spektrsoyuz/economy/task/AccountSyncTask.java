@@ -14,7 +14,7 @@ import java.util.List;
  * @since 1.0.0
  */
 @RequiredArgsConstructor
-public class AccountSyncTask implements Runnable {
+public final class AccountSyncTask implements Runnable {
 
     private final EconomyPlugin plugin;
 
