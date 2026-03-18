@@ -3,6 +3,7 @@ package com.spektrsoyuz.economy.listener;
 import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
+import com.spektrsoyuz.economy.model.CurrencyType;
 import com.spektrsoyuz.economy.model.account.Transactor;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import com.spektrsoyuz.economy.model.config.OptionsConfig;
@@ -51,7 +52,7 @@ public class PlayerListener implements Listener {
 
             final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
 
-            if (currencyConfig.getType().equals("exp")) {
+            if (currencyConfig.getType() == CurrencyType.EXP) {
                 this.plugin.getAccountController().updateExp(player);
             }
         }, () -> {
@@ -83,7 +84,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onExpChange(final PlayerExpChangeEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!currencyConfig.getType().equals("exp")) return;
+        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
 
         final Player player = event.getPlayer();
         final int amount = event.getAmount();
@@ -113,7 +114,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onLevelChange(final PlayerLevelChangeEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!currencyConfig.getType().equals("exp")) return;
+        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
 
         final Player player = event.getPlayer();
         final int oldLevel = event.getOldLevel();
@@ -147,7 +148,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerDeath(final PlayerDeathEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!currencyConfig.getType().equals("exp")) return;
+        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
 
         final Player player = event.getPlayer();
         event.setDroppedExp(0);
@@ -219,7 +220,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerRespawn(final PlayerRespawnEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!currencyConfig.getType().equals("exp")) return;
+        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
 
         // Sync XP bar
         this.plugin.getAccountController().updateExp(event.getPlayer());
@@ -228,7 +229,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerInteract(final PlayerInteractEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!currencyConfig.getType().equals("exp")) return;
+        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
 
         final Player player = event.getPlayer();
         final ItemStack item = event.getItem();

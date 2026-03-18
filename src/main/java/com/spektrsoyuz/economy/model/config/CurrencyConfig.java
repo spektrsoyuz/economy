@@ -1,5 +1,6 @@
 package com.spektrsoyuz.economy.model.config;
 
+import com.spektrsoyuz.economy.model.CurrencyType;
 import lombok.Getter;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
@@ -31,9 +32,14 @@ public final class CurrencyConfig {
         this.type = "default";
     }
 
-    // Gets the starting balance of the account
+    // Gets the starting balance for new accounts
     public BigDecimal getStartingBalance() {
         return BigDecimal.valueOf(this.startingBalance);
+    }
+
+    // Gets the currency type
+    public CurrencyType getType() {
+        return CurrencyType.valueOf(this.type.toUpperCase());
     }
 
 }

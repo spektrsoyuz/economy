@@ -2,6 +2,7 @@ package com.spektrsoyuz.economy.listener;
 
 import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
+import com.spektrsoyuz.economy.model.CurrencyType;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.event.EventHandler;
@@ -26,7 +27,7 @@ public class EntityListener implements Listener {
     @EventHandler
     public void onExpBottleBreak(final ExpBottleEvent event) {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!currencyConfig.getType().equals("exp")) return;
+        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
 
         // Set experience drop to fixed value
         event.setExperience(Constants.LEVEL_COST);
