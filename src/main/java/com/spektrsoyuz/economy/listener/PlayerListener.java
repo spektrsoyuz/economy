@@ -106,6 +106,7 @@ public class PlayerListener implements Listener {
                         this.plugin.getMiniMessage()
                 ));
                 player.setExp(player.getExp() - amount);
+                EconomyUtils.playErrorSound(player);
             }
         });
     }
@@ -138,6 +139,7 @@ public class PlayerListener implements Listener {
                             this.plugin.getMiniMessage()
                     ));
                     player.setLevel(oldLevel);
+                    EconomyUtils.playErrorSound(player);
                 }
             }
         });
@@ -168,6 +170,7 @@ public class PlayerListener implements Listener {
                             "error-transaction-failed",
                             this.plugin.getMiniMessage()
                     ));
+                    EconomyUtils.playErrorSound(player);
                     return;
                 }
 
@@ -183,6 +186,7 @@ public class PlayerListener implements Listener {
                                     "error-transaction-failed",
                                     this.plugin.getMiniMessage()
                             ));
+                            EconomyUtils.playErrorSound(player);
                             return;
                         }
 

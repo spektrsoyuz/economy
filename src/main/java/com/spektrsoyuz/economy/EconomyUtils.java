@@ -1,6 +1,8 @@
 package com.spektrsoyuz.economy;
 
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -27,6 +29,11 @@ public final class EconomyUtils {
                 : config.getNamePlural();
 
         return String.format("%s%s %s", config.getSymbol(), formattedAmount, label);
+    }
+
+    // Plays an error sound for a player
+    public static void playErrorSound(final Player player) {
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_IRON_XYLOPHONE, 1.0f, 0.5f);
     }
 
 }

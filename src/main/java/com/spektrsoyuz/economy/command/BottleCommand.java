@@ -103,6 +103,7 @@ public final class BottleCommand {
                         "error-transaction-failed",
                         this.plugin.getMiniMessage()
                 ));
+                EconomyUtils.playErrorSound(player);
                 return;
             }
 

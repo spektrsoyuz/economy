@@ -101,6 +101,7 @@ public final class PayCommand {
                                             "error-transaction-failed",
                                             this.plugin.getMiniMessage()
                                     ));
+                                    EconomyUtils.playErrorSound(player);
                                     return 0;
                                 }
 
@@ -112,6 +113,7 @@ public final class PayCommand {
                                             "error-transaction-failed",
                                             this.plugin.getMiniMessage()
                                     ));
+                                    EconomyUtils.playErrorSound(player);
                                     return 0;
                                 }
 
