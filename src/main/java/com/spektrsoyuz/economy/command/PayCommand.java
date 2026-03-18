@@ -8,6 +8,7 @@ import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.command.suggest.PlayerAccountSuggestionProvider;
+import com.spektrsoyuz.economy.model.account.Account;
 import com.spektrsoyuz.economy.model.account.Transactor;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -15,11 +16,11 @@ import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 /**
  * Model class for the /pay command.
@@ -41,7 +42,7 @@ public final class PayCommand {
                 .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_PAY))
                 .then(Commands.argument("player", ArgumentTypes.player())
                         .suggests(new PlayerAccountSuggestionProvider(this.plugin))
-                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                                 .executes(this::execute)))
                 .build();
 
@@ -50,108 +51,99 @@ public final class PayCommand {
 
     // Executes the command
     private int execute(final CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        final CommandSender sender = ctx.getSource().getSender();
+        final var source = ctx.getSource();
 
-        // Check if sender is a player
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(this.plugin.getConfigController().getMessage(
-                    "error-sender-not-player",
-                    this.plugin.getMiniMessage()
-            ));
+        // Check if the sender is a player
+        if (!(source.getSender() instanceof Player sender)) {
+            this.sendMessage(source.getSender(), "error-sender-not-player");
             return 0;
         }
 
-        final String currencyPlural = this.plugin.getConfigController().getCurrencyConfig().getNamePlural();
-        final PlayerSelectorArgumentResolver targetResolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
-        final Player targetPlayer = targetResolver.resolve(ctx.getSource()).getFirst();
-        final int amount = ctx.getArgument("amount", Integer.class);
-        final BigDecimal amountBD = BigDecimal.valueOf(amount);
+        final var targetResolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+        final Player target = targetResolver.resolve(source).getFirst();
+        final BigDecimal amount = BigDecimal.valueOf(ctx.getArgument("amount", Integer.class));
 
-        // Check if target is player
-        if (player.getName().equals(targetPlayer.getName())) {
-            player.sendMessage(this.plugin.getConfigController().getMessage(
-                    "command-pay-self",
-                    this.plugin.getMiniMessage()
-            ));
+        // Check if the sender is the target
+        if (sender.getUniqueId().equals(target.getUniqueId())) {
+            this.sendMessage(sender, "command-pay-self");
             return 0;
         }
 
-        // Check if player account exists
-        return this.plugin.getAccountController().getPlayerAccount(player)
-                .flatMap(account -> {
-                    // Check if account balance is less than amount
-                    if (account.getBalance().compareTo(amountBD) < 0) {
-                        player.sendMessage(this.plugin.getConfigController().getMessage(
-                                "error-not-enough-balance",
-                                this.plugin.getMiniMessage(),
-                                Placeholder.parsed("currency", currencyPlural)
-                        ));
-                        return Optional.empty();
-                    }
+        final var senderOpt = this.plugin.getAccountController().getPlayerAccount(sender);
+        final var targetOpt = this.plugin.getAccountController().getPlayerAccount(target);
 
-                    // Check if target account exists
-                    return this.plugin.getAccountController().getPlayerAccount(targetPlayer)
-                            .map(targetAccount -> {
-                                // Perform the transaction
-                                final boolean accountSuccess = account.subtractBalance(amountBD, Transactor.PLAYER);
+        // Check if accounts exist
+        if (senderOpt.isEmpty() || targetOpt.isEmpty()) {
+            this.sendMessage(sender, "error-account-not-found");
+            return 0;
+        }
 
-                                if (!accountSuccess) {
-                                    // Transaction failed
-                                    player.sendMessage(this.plugin.getConfigController().getMessage(
-                                            "error-transaction-failed",
-                                            this.plugin.getMiniMessage()
-                                    ));
-                                    EconomyUtils.playErrorSound(player);
-                                    return 0;
-                                }
+        final Account senderAccount = senderOpt.get();
+        final Account targetAccount = targetOpt.get();
 
-                                final boolean targetSuccess = targetAccount.addBalance(amountBD, Transactor.PLAYER);
+        // Check if sender has enough balance
+        if (senderAccount.getBalance().compareTo(amount) < 0) {
+            this.sendMessage(
+                    sender,
+                    "error-not-enough-balance",
+                    Placeholder.parsed("currency", EconomyUtils.format(this.plugin, amount))
+            );
+            return 0;
+        }
 
-                                if (!targetSuccess) {
-                                    // Transaction failed
-                                    player.sendMessage(this.plugin.getConfigController().getMessage(
-                                            "error-transaction-failed",
-                                            this.plugin.getMiniMessage()
-                                    ));
-                                    EconomyUtils.playErrorSound(player);
-                                    return 0;
-                                }
+        // Subtract amount from sender account
+        if (!senderAccount.subtractBalance(amount, Transactor.PLAYER)) {
+            this.handleError(sender);
+            return 0;
+        }
 
-                                final String name = account.getDisplayName();
-                                final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
-                                final String currency = EconomyUtils.format(this.plugin, amountBD);
+        // Add amount to target account
+        if (!targetAccount.addBalance(amount, Transactor.PLAYER)) {
+            // Rollback transaction if failed
+            senderAccount.addBalance(amount, Transactor.PLAYER);
+            this.handleError(sender);
+            return 0;
+        }
 
-                                // Send success messages to sender
-                                player.sendMessage(this.plugin.getConfigController().getMessage(
-                                        "command-pay-send",
-                                        this.plugin.getMiniMessage(),
-                                        Placeholder.parsed("name", name),
-                                        Placeholder.parsed("symbol", symbol),
-                                        Placeholder.parsed("currency", currency)
-                                ));
+        // Notify player of transaction success
+        this.notifySuccess(sender, target, senderAccount, amount);
+        return Command.SINGLE_SUCCESS;
+    }
 
-                                // Send success message to target
-                                targetPlayer.sendMessage(this.plugin.getConfigController().getMessage(
-                                        "command-pay-receive",
-                                        this.plugin.getMiniMessage(),
-                                        Placeholder.parsed("name", name),
-                                        Placeholder.parsed("symbol", symbol),
-                                        Placeholder.parsed("currency", currency)
-                                ));
+    // Notifies the player of a successful transaction
+    private void notifySuccess(
+            final Player sender,
+            final Player target,
+            final Account senderAccount,
+            final BigDecimal amount
+    ) {
+        final String currency = EconomyUtils.format(plugin, amount);
+        final String symbol = plugin.getConfigController().getCurrencyConfig().getSymbol();
 
-                                return Command.SINGLE_SUCCESS;
-                            });
-                })
-                .orElseGet(() -> {
-                    // Check if transaction was successful
-                    if (this.plugin.getAccountController().getPlayerAccount(targetPlayer).isEmpty()) {
-                        player.sendMessage(this.plugin.getConfigController().getMessage(
-                                "error-account-not-found",
-                                this.plugin.getMiniMessage()
-                        ));
-                    }
-                    return 0;
-                });
+        final TagResolver[] tags = {
+                Placeholder.parsed("name", senderAccount.getDisplayName()),
+                Placeholder.parsed("symbol", symbol),
+                Placeholder.parsed("currency", currency)
+        };
+
+        this.sendMessage(sender, "command-pay-send", tags);
+        this.sendMessage(target, "command-pay-receive", tags);
+    }
+
+    // Handles a transaction error
+    private void handleError(final Player player) {
+        this.sendMessage(player, "error-transaction-failed");
+        EconomyUtils.playErrorSound(player);
+    }
+
+    // Sends a message to a sender
+    private void sendMessage(
+            final CommandSender sender,
+            final String key, final TagResolver... tags
+    ) {
+        sender.sendMessage(this.plugin.getConfigController().getMessage(
+                key, this.plugin.getMiniMessage(), tags
+        ));
     }
 
 }
