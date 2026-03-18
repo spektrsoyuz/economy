@@ -18,6 +18,9 @@ import java.util.Set;
  */
 public interface EconomyDao {
 
+    /**
+     * Creates the primary accounts table if it does not already exist.
+     */
     @SqlUpdate("""
             CREATE TABLE IF NOT EXISTS economy_accounts (
                 id VARCHAR(36) NOT NULL UNIQUE PRIMARY KEY,
@@ -28,6 +31,9 @@ public interface EconomyDao {
             )""")
     void createAccountsTable();
 
+    /**
+     * Creates the transactions log table if it does not already exist.
+     */
     @SqlUpdate("""
             CREATE TABLE IF NOT EXISTS economy_transactions (
                 id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -39,6 +45,11 @@ public interface EconomyDao {
             )""")
     void createTransactionsTable();
 
+    /**
+     * Inserts or updates an account record in the database.
+     *
+     * @param account The account state to persist.
+     */
     @SqlUpdate("""
             INSERT INTO economy_accounts (id, name, balance, frozen)
             VALUES (:id, :name, :balance, :frozen)
@@ -46,29 +57,67 @@ public interface EconomyDao {
             """)
     void saveAccount(@BindMethods Account.Memento account);
 
+    /**
+     * Records a new transaction entry in the database log.
+     *
+     * @param transaction The transaction details to persist.
+     */
     @SqlUpdate("""
             INSERT INTO economy_transactions (account, actor, name, amount)
             VALUES (:accountId, :transactor, :accountName, :amount)
             """)
     void saveTransaction(@BindMethods Transaction transaction);
 
+    /**
+     * Deletes a specific account from the database by its unique ID.
+     *
+     * @param id The UUID string of the account to remove.
+     */
     @SqlUpdate("DELETE FROM economy_accounts WHERE id = :id")
     void deleteAccount(@Bind("id") String id);
 
+    /**
+     * Deletes account records that have not been updated within
+     * the specified timeframe.
+     *
+     * @param days The age threshold in days for expiration.
+     */
     @SqlUpdate("DELETE FROM economy_accounts WHERE timestamp < DATE_SUB(NOW(), INTERVAL :days DAY)")
     void expireAccounts(@Bind("days") int days);
 
+    /**
+     * Deletes transaction logs older than the specified timeframe.
+     *
+     * @param days The age threshold in days for expiration.
+     */
     @SqlUpdate("DELETE FROM economy_transactions WHERE timestamp < DATE_SUB(NOW(), INTERVAL :days DAY)")
     void expireTransactions(@Bind("days") int days);
 
+    /**
+     * Retrieves an account state from the database by its unique ID.
+     *
+     * @param id The UUID string to search for.
+     * @return An {@link Optional} containing the account memento if found.
+     */
     @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts WHERE id = :id")
     @RegisterConstructorMapper(Account.Memento.class)
     Optional<Account.Memento> getAccountById(@Bind("id") String id);
 
+    /**
+     * Retrieves an account state from the database by the owner's name.
+     *
+     * @param name The name to search for.
+     * @return An {@link Optional} containing the account memento if found.
+     */
     @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts WHERE name = :name")
     @RegisterConstructorMapper(Account.Memento.class)
     Optional<Account.Memento> getAccountByName(@Bind("name") String name);
 
+    /**
+     * Retrieves all account states currently stored in the database.
+     *
+     * @return A set containing all account mementos.
+     */
     @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts")
     @RegisterConstructorMapper(Account.Memento.class)
     Set<Account.Memento> getAccounts();
