@@ -207,15 +207,24 @@ public final class EconomyController {
     // Calculates how much total currency value the player can fit in their inventory
     private int calculateAvailableSpace(final Player player, final CurrencyConfig config) {
         int totalValueSpace = 0;
-        final int maxValuation = config.getItems().values().stream().max(Integer::compare).orElse(1);
+
+        // Get the highest value item available for the currency
+        final int highestDenominationValue = config.getItems().values().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+
+        if (highestDenominationValue == 0) return 0;
 
         for (final ItemStack item : player.getInventory().getStorageContents()) {
             if (item == null || item.getType().isAir()) {
-                // Assume empty slots can hold a full stack of the highest value item
-                totalValueSpace += (maxValuation * 64);
+                // An empty slot can hold 64 of the highest value item
+                totalValueSpace += (64 * highestDenominationValue);
             } else {
                 int value = config.getItemValue(item.getType());
-                if (value > 0) {
+
+                // Calculate remaining stack space
+                if (value > 0 && item.getAmount() < 64) {
                     totalValueSpace += (64 - item.getAmount()) * value;
                 }
             }
