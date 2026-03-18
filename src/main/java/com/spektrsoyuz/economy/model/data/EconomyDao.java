@@ -100,7 +100,7 @@ public interface EconomyDao {
      * @param id The UUID string to search for.
      * @return An {@link Optional} containing the account memento if found.
      */
-    @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts WHERE id = :id")
+    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit FROM economy_accounts WHERE id = :id")
     @RegisterConstructorMapper(Account.Memento.class)
     Optional<Account.Memento> getAccountById(@Bind("id") String id);
 
@@ -110,7 +110,7 @@ public interface EconomyDao {
      * @param name The name to search for.
      * @return An {@link Optional} containing the account memento if found.
      */
-    @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts WHERE name = :name")
+    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit FROM economy_accounts WHERE name = :name")
     @RegisterConstructorMapper(Account.Memento.class)
     Optional<Account.Memento> getAccountByName(@Bind("name") String name);
 
@@ -119,7 +119,7 @@ public interface EconomyDao {
      *
      * @return A set containing all account mementos.
      */
-    @SqlQuery("SELECT id, name, balance, frozen FROM economy_accounts")
+    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit FROM economy_accounts")
     @RegisterConstructorMapper(Account.Memento.class)
     Set<Account.Memento> getAccounts();
 

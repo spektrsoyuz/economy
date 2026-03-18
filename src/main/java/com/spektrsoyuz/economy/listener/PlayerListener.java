@@ -236,18 +236,17 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerInteract(final PlayerInteractEvent event) {
         final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (config.getType() != CurrencyType.ITEM && config.getType() != CurrencyType.EXP) return;
+
         final ItemStack item = event.getItem();
 
         if (item == null) return;
         if (!event.getAction().isRightClick()) return;
         if (!event.getPlayer().isSneaking()) return;
 
-        // Handle item currency type
-        if (config.getType() == CurrencyType.ITEM || config.getType() == CurrencyType.EXP) {
-            final int valuePerItem = config.getItemValue(item.getType());
-            if (valuePerItem > 0) {
-                this.processItemExchange(event, item, config, valuePerItem);
-            }
+        final int valuePerItem = config.getItemValue(item.getType());
+        if (valuePerItem > 0) {
+            this.processItemExchange(event, item, config, valuePerItem);
         }
     }
 
@@ -256,30 +255,29 @@ public class PlayerListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
 
         final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (config.getType() != CurrencyType.ITEM && config.getType() != CurrencyType.EXP) return;
 
-        if (config.getType() == CurrencyType.ITEM || config.getType() == CurrencyType.EXP) {
-            this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
-                // Account found
-                if (!account.isAutoDeposit()) return;
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
+            // Account found
+            if (!account.isAutoDeposit()) return;
 
-                final ItemStack itemStack = event.getItem().getItemStack();
-                final int valuePerItem = config.getItemValue(itemStack.getType());
+            final ItemStack itemStack = event.getItem().getItemStack();
+            final int valuePerItem = config.getItemValue(itemStack.getType());
 
-                if (valuePerItem > 0) {
-                    // Cancel the item pickup and deposit the value instead
-                    event.setCancelled(true);
-                    event.getItem().remove();
+            if (valuePerItem > 0) {
+                // Cancel the item pickup and deposit the value instead
+                event.setCancelled(true);
+                event.getItem().remove();
 
-                    this.depositItem(player, account, itemStack, valuePerItem);
-                }
-            }, () -> {
-                // No account found
-                this.plugin.getComponentLogger().error(
-                        "Auto deposit on item pickup failed, account not found for player '{}'",
-                        player.getName()
-                );
-            });
-        }
+                this.depositItem(player, account, itemStack, valuePerItem);
+            }
+        }, () -> {
+            // No account found
+            this.plugin.getComponentLogger().error(
+                    "Auto deposit on item pickup failed, account not found for player '{}'",
+                    player.getName()
+            );
+        });
     }
 
     @EventHandler
@@ -287,46 +285,70 @@ public class PlayerListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
         final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (config.getType() != CurrencyType.ITEM && config.getType() != CurrencyType.EXP) return;
 
-        if (config.getType() == CurrencyType.ITEM || config.getType() == CurrencyType.EXP) {
-            // Check if item is being placed into a slot or being shift-clicked
-            switch (event.getAction()) {
-                case PLACE_ALL:
-                case PLACE_ONE:
-                case PLACE_SOME:
-                case SWAP_WITH_CURSOR:
-                case MOVE_TO_OTHER_INVENTORY:
-                    break;
-                default:
-                    return;
+        // Skip auto-deposit if the player is placing items into a container
+        if (event.getClickedInventory() != null && event.getClickedInventory().getHolder() != player) {
+            if (event.getAction() != InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+                return;
+            }
+        }
+
+        ItemStack itemToDeposit;
+        int amountToDeposit;
+
+        // Identify the action and the amount to be processed
+        switch (event.getAction()) {
+            case PLACE_ALL:
+            case SWAP_WITH_CURSOR, PLACE_SOME:
+                itemToDeposit = event.getCursor();
+                amountToDeposit = itemToDeposit.getAmount();
+                break;
+            case PLACE_ONE:
+                itemToDeposit = event.getCursor();
+                amountToDeposit = 1;
+                break;
+            case MOVE_TO_OTHER_INVENTORY:
+                itemToDeposit = event.getCurrentItem();
+                amountToDeposit = (itemToDeposit != null) ? itemToDeposit.getAmount() : 0;
+                break;
+            default:
+                return;
+        }
+
+        if (itemToDeposit == null || itemToDeposit.getType().isAir()) return;
+
+        final int valuePerItem = config.getItemValue(itemToDeposit.getType());
+        if (valuePerItem <= 0) return;
+
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
+            if (!account.isAutoDeposit()) return;
+
+            // Prevent the item from actually moving into the slot
+            event.setCancelled(true);
+
+            final ItemStack depositStack = itemToDeposit.clone();
+            depositStack.setAmount(amountToDeposit);
+
+            if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+                // Remove the item from the inventory slot for shift-clicks
+                event.setCurrentItem(null);
+            } else {
+                // Reduce the amount on the cursor for placement actions
+                int remaining = itemToDeposit.getAmount() - amountToDeposit;
+                ItemStack cursorClone = itemToDeposit.clone();
+                cursorClone.setAmount(remaining);
+                player.setItemOnCursor(remaining <= 0 ? null : cursorClone);
             }
 
-            final ItemStack itemStack = (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY)
-                    ? event.getCurrentItem()
-                    : event.getCursor();
-
-            if (itemStack == null || itemStack.getType().isAir()) return;
-
-            this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
-                // Account found
-                if (!account.isAutoDeposit()) return;
-
-                final int valuePerItem = config.getItemValue(itemStack.getType());
-                if (valuePerItem > 0) {
-                    // Cancel the item move and deposit the value instead
-                    event.setCancelled(true);
-                    event.setCurrentItem(null);
-
-                    this.depositItem(player, account, itemStack, valuePerItem);
-                }
-            }, () -> {
-                // No account found
-                this.plugin.getComponentLogger().error(
-                        "Auto deposit on item move failed, account not found for player '{}'",
-                        player.getName()
-                );
-            });
-        }
+            this.depositItem(player, account, depositStack, valuePerItem);
+        }, () -> {
+            // No account found
+            this.plugin.getComponentLogger().error(
+                    "Auto deposit on item move failed, account not found for player '{}'",
+                    player.getName()
+            );
+        });
     }
 
     @EventHandler
@@ -334,51 +356,55 @@ public class PlayerListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
         final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (config.getType() != CurrencyType.ITEM && config.getType() != CurrencyType.EXP) return;
 
-        if (config.getType() == CurrencyType.ITEM || config.getType() == CurrencyType.EXP) {
-            final ItemStack itemStack = event.getOldCursor();
-            if (itemStack.getType().isAir()) return;
-
-            final int valuePerItem = config.getItemValue(itemStack.getType());
-            if (valuePerItem <= 0) return;
-
-            this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
-                // Account found
-                if (!account.isAutoDeposit()) return;
-
-                // Cancel the drag to prevent items from entering slots
-                event.setCancelled(true);
-
-                // Calculate total amount from all slots involved in the drag
-                int totalAmount = 0;
-                for (final ItemStack item : event.getNewItems().values()) {
-                    totalAmount += item.getAmount();
-                }
-
-                // Create a temporary stack representing the total amount dragged
-                final ItemStack depositStack = itemStack.clone();
-                depositStack.setAmount(totalAmount);
-
-                // Update the cursor to remove the "spent" items
-                final ItemStack remainingCursor = itemStack.clone();
-                remainingCursor.setAmount(itemStack.getAmount() - totalAmount);
-
-                // Use a task to update cursor after the event
-                this.plugin.getServer().getScheduler().runTask(this.plugin,
-                        () -> player.setItemOnCursor(remainingCursor.getAmount() <= 0
-                                ? null
-                                : remainingCursor
-                        ));
-
-                this.depositItem(player, account, depositStack, valuePerItem);
-            }, () -> {
-                // No account found
-                this.plugin.getComponentLogger().error(
-                        "Auto deposit on item drag failed, account not found for player '{}'",
-                        player.getName()
-                );
-            });
+        // Check if any part of the drag is entering an external inventory
+        final int topInventorySize = event.getView().getTopInventory().getSize();
+        for (int slot : event.getRawSlots()) {
+            if (slot < topInventorySize) {
+                return;
+            }
         }
+
+        final ItemStack cursorStack = event.getOldCursor();
+        if (cursorStack.getType().isAir()) return;
+
+        final int valuePerItem = config.getItemValue(cursorStack.getType());
+        if (valuePerItem <= 0) return;
+
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
+            if (!account.isAutoDeposit()) return;
+
+            // Calculate the sum of all items distributed
+            int totalDraggedAmount = 0;
+            for (final ItemStack item : event.getNewItems().values()) {
+                totalDraggedAmount += item.getAmount();
+            }
+
+            if (totalDraggedAmount <= 0) return;
+
+            event.setCancelled(true);
+
+            final ItemStack depositStack = cursorStack.clone();
+            depositStack.setAmount(totalDraggedAmount);
+
+            final int remainingAmount = cursorStack.getAmount() - totalDraggedAmount;
+            final ItemStack remainingCursor = cursorStack.clone();
+            remainingCursor.setAmount(remainingAmount);
+
+            // Update the cursor on the next tick to prevent synchronization issues
+            this.plugin.getServer().getScheduler().runTask(this.plugin,
+                    () -> player.setItemOnCursor(remainingAmount <= 0 ? null : remainingCursor)
+            );
+
+            this.depositItem(player, account, depositStack, valuePerItem);
+        }, () -> {
+            // No account found
+            this.plugin.getComponentLogger().error(
+                    "Auto deposit on item drag failed, account not found for player '{}'",
+                    player.getName()
+            );
+        });
     }
 
     // Handles currency conversion
@@ -452,7 +478,6 @@ public class PlayerListener implements Listener {
         if (!success) {
             // Transaction failed
             this.handleTransactionFailure(player);
-            player.getWorld().dropItemNaturally(player.getLocation(), item);
             return;
         }
 
