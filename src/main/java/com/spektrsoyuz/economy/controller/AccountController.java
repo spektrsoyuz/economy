@@ -108,11 +108,12 @@ public final class AccountController {
      * Creates a new economy account with the configured starting balance
      * and adds it to the cache.
      *
-     * @param id   The unique ID for the new account.
-     * @param name The name to associate with the account.
+     * @param id     The unique ID for the new account.
+     * @param name   The name to associate with the account.
+     * @param player {@code true} if the account is a player account.
      * @return The newly created {@link Account}.
      */
-    public Account createAccount(final UUID id, final String name) {
+    public Account createAccount(final UUID id, final String name, final boolean player) {
         final BigDecimal balance = this.plugin.getConfigController().getCurrencyConfig().getStartingBalance();
         final Account account = Account.builder()
                 .plugin(this.plugin)
@@ -122,6 +123,8 @@ public final class AccountController {
                 .build();
 
         this.accounts.put(id, account);
+        if (player) this.onlineAccounts.put(id, account);
+
         return account;
     }
 

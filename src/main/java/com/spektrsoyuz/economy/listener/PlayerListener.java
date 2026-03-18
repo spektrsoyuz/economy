@@ -53,7 +53,7 @@ public class PlayerListener implements Listener {
             }
         }, () -> {
             // Create new account for player
-            this.plugin.getAccountController().createAccount(player.getUniqueId(), player.getName());
+            this.plugin.getAccountController().createAccount(player.getUniqueId(), player.getName(), true);
             this.plugin.getComponentLogger().info("Creating player account for '{}:{}'",
                     player.getUniqueId(),
                     player.getName()

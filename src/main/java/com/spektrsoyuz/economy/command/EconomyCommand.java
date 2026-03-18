@@ -150,10 +150,12 @@ public final class EconomyCommand {
                 : UUID.randomUUID();
 
         // Create account
-        final Account account = this.plugin.getAccountController().createAccount(uuid, accountName);
+        final Account account;
 
         if (player != null) {
-            this.plugin.getAccountController().addPlayerAccount(account);
+            account = this.plugin.getAccountController().createAccount(uuid, accountName, true);
+        } else {
+            account = this.plugin.getAccountController().createAccount(uuid, accountName, false);
         }
 
         // Send message to sender

@@ -108,7 +108,7 @@ public final class EconomyImpl implements Economy {
 
     @Override
     public boolean createAccount(@NotNull UUID accountID, @NotNull String name) {
-        this.plugin.getAccountController().createAccount(accountID, name);
+        this.plugin.getAccountController().createAccount(accountID, name, false);
         return true;
     }
 

@@ -272,8 +272,7 @@ public class LegacyEconomyImpl implements Economy {
         final Player player = this.plugin.getServer().getPlayer(playerName);
 
         if (player != null) {
-            this.plugin.getAccountController().createAccount(player.getUniqueId(), player.getName());
-            return true;
+            return this.plugin.getAccountController().createAccount(player.getUniqueId(), player.getName(), true) != null;
         } else {
             return false;
         }
