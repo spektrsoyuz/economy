@@ -105,7 +105,6 @@ public class PlayerListener implements Listener {
                         "error-transaction-failed",
                         this.plugin.getMiniMessage()
                 ));
-                player.setExp(player.getExp() - amount);
                 EconomyUtils.playErrorSound(player);
             }
         });
@@ -255,6 +254,7 @@ public class PlayerListener implements Listener {
                             ));
 
                             event.setCancelled(true);
+                            EconomyUtils.playErrorSound(player);
                             return;
                         }
 
