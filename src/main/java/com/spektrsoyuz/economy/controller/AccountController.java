@@ -1,5 +1,6 @@
 package com.spektrsoyuz.economy.controller;
 
+import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Account;
 import lombok.Getter;
@@ -26,6 +27,7 @@ public final class AccountController {
     private final Map<UUID, Account> accounts = new ConcurrentHashMap<>();
     private final Map<UUID, Account> onlineAccounts = new ConcurrentHashMap<>();
     private final List<Account> topAccounts = new ArrayList<>();
+    private final Map<UUID, Long> soundCooldowns = new HashMap<>();
 
     /**
      * Initializes the controller.
@@ -207,13 +209,18 @@ public final class AccountController {
     public void updateExp(final Player player) {
         this.getPlayerAccount(player).ifPresent(account -> {
             final double balance = account.getBalance().doubleValue();
-
             final int newLevel = (int) balance;
             final float progress = (float) (balance - newLevel);
 
             if (newLevel / 5 > player.getLevel() / 5) {
                 // Play level up sound every 5 levels
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                final long currentTime = System.currentTimeMillis();
+                final long lastPlayed = soundCooldowns.getOrDefault(player.getUniqueId(), 0L);
+
+                if (currentTime - lastPlayed >= Constants.LEVEL_SOUND_COOLDOWN) {
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                    soundCooldowns.put(player.getUniqueId(), currentTime);
+                }
             }
 
             player.setLevel(newLevel);
