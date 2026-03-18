@@ -13,7 +13,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
@@ -228,57 +227,64 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerInteract(final PlayerInteractEvent event) {
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
-
-        final Player player = event.getPlayer();
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
         final ItemStack item = event.getItem();
 
+        if (item == null) return;
+        if (!event.getAction().isRightClick()) return;
+        if (!event.getPlayer().isSneaking()) return;
+
+        // Validate item type for currency mode
+        final boolean isValid = switch (config.getType()) {
+            case EXP -> item.getType() == Material.EXPERIENCE_BOTTLE;
+            case ITEM -> item.getType().asItemType() == config.getItem();
+            default -> false;
+        };
+
+        if (isValid) {
+            // Handle currency conversion
+            this.processItemExchange(event, item, config);
+        }
+    }
+
+    // Handles currency conversion
+    private void processItemExchange(final PlayerInteractEvent event, final ItemStack item, final CurrencyConfig config) {
+        final Player player = event.getPlayer();
+
         this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
-            // Check if the item is an experience bottle
-            if (item != null && item.getType() == Material.EXPERIENCE_BOTTLE) {
-                // Check if player is right-clicking
-                if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                    // Check if player is sneaking
-                    if (player.isSneaking()) {
-                        event.setCancelled(true);
+            event.setCancelled(true);
 
-                        // Add balance to player account
-                        final int amount = item.getAmount();
-                        final boolean success = account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+            // Handle transaction
+            final int amount = item.getAmount();
+            final BigDecimal value = BigDecimal.valueOf(amount);
+            final boolean success = account.addBalance(value, Transactor.SERVER);
 
-                        if (!success) {
-                            // Transaction failed
-                            player.sendMessage(this.plugin.getConfigController().getMessage(
-                                    "error-transaction-failed",
-                                    this.plugin.getMiniMessage()
-                            ));
-
-                            event.setCancelled(true);
-                            EconomyUtils.playErrorSound(player);
-                            return;
-                        }
-
-                        // Remove item from inventory
-                        if (player.getInventory().getItemInMainHand().equals(item)) {
-                            player.getInventory().setItemInMainHand(null);
-                        } else if (player.getInventory().getItemInOffHand().equals(item)) {
-                            player.getInventory().setItemInOffHand(null);
-                        }
-
-                        // Send message to player
-                        final String currency = EconomyUtils.format(this.plugin, BigDecimal.valueOf(amount));
-
-                        player.sendMessage(this.plugin.getConfigController().getMessage(
-                                "economy-exp-discard",
-                                this.plugin.getMiniMessage(),
-                                Placeholder.parsed("amount", String.valueOf(amount)),
-                                Placeholder.parsed("currency", currency)
-                        ));
-                    }
-                }
+            if (!success) {
+                this.handleTransactionFailure(player);
+                return;
             }
+
+            // Remove item
+            item.setAmount(0);
+
+            // Send message to player
+            player.sendMessage(this.plugin.getConfigController().getMessage(
+                    String.format("economy-%s-discard", config.getType().name().toLowerCase()),
+                    this.plugin.getMiniMessage(),
+                    Placeholder.parsed("amount", String.valueOf(amount)),
+                    Placeholder.parsed("currency", EconomyUtils.format(this.plugin, value))
+            ));
         });
+    }
+
+    // Handles a transaction failure
+    private void handleTransactionFailure(final Player player) {
+        player.sendMessage(this.plugin.getConfigController().getMessage(
+                "error-transaction-failed",
+                this.plugin.getMiniMessage()
+        ));
+
+        EconomyUtils.playErrorSound(player);
     }
 
 }

@@ -2,6 +2,8 @@ package com.spektrsoyuz.economy.model.config;
 
 import com.spektrsoyuz.economy.model.CurrencyType;
 import lombok.Getter;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemType;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
 import java.math.BigDecimal;
@@ -13,6 +15,7 @@ import java.math.BigDecimal;
  */
 @Getter
 @ConfigSerializable
+@SuppressWarnings("UnstableApiUsage")
 public final class CurrencyConfig {
 
     private final String name;
@@ -21,6 +24,7 @@ public final class CurrencyConfig {
     private final double startingBalance;
     private final String symbol;
     private final String type;
+    private final String item;
 
     // Constructor
     public CurrencyConfig() {
@@ -28,8 +32,9 @@ public final class CurrencyConfig {
         this.namePlural = "crowns";
         this.nameSingular = "crown";
         this.startingBalance = 0.0;
-        this.symbol = "♛";
+        this.symbol = "";
         this.type = "default";
+        this.item = "minecraft:gold_ingot";
     }
 
     // Gets the starting balance for new accounts
@@ -40,6 +45,17 @@ public final class CurrencyConfig {
     // Gets the currency type
     public CurrencyType getType() {
         return CurrencyType.valueOf(this.type.toUpperCase());
+    }
+
+    // Gets the item type
+    public ItemType getItem() {
+        final Material material = Material.matchMaterial(this.item);
+
+        if (material == null) {
+            return ItemType.GOLD_INGOT;
+        }
+
+        return material.asItemType();
     }
 
 }
