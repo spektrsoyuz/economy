@@ -23,6 +23,9 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Listener class for player events.
@@ -33,6 +36,9 @@ import java.math.BigDecimal;
 public class PlayerListener implements Listener {
 
     private final EconomyPlugin plugin;
+
+    private final Map<UUID, BigDecimal> sessionTotals = new HashMap<>();
+    private final Map<UUID, Integer> resetTasks = new HashMap<>();
 
     // Registers the listener
     public void register() {
@@ -481,14 +487,34 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        // Send message to player
+        final UUID uuid = player.getUniqueId();
+
+        // Update the running total for this session
+        BigDecimal currentSessionTotal = this.sessionTotals.getOrDefault(uuid, BigDecimal.ZERO);
+        currentSessionTotal = currentSessionTotal.add(totalValue);
+        this.sessionTotals.put(uuid, currentSessionTotal);
+
+        // Cancel any existing reset task
+        if (this.resetTasks.containsKey(uuid)) {
+            this.plugin.getServer().getScheduler().cancelTask(this.resetTasks.get(uuid));
+        }
+
+        // Send the action bar to the player
         player.sendActionBar(this.plugin.getConfigController().getMessage(
                 "command-deposit-auto",
                 this.plugin.getMiniMessage(),
-                Placeholder.parsed("currency", EconomyUtils.format(this.plugin, totalValue))
+                Placeholder.parsed("currency", EconomyUtils.format(this.plugin, currentSessionTotal))
         ));
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.5f);
+
+        // Schedule the session reset
+        final int taskId = this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+            this.sessionTotals.remove(uuid);
+            this.resetTasks.remove(uuid);
+        }, 30L).getTaskId();
+
+        this.resetTasks.put(uuid, taskId);
     }
 
 }
