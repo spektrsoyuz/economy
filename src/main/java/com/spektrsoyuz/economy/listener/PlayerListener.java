@@ -97,7 +97,16 @@ public class PlayerListener implements Listener {
             // Convert raw XP points to a fraction of a level
             final double levelGain = (double) amount / Constants.LEVEL_COST;
 
-            account.addBalance(BigDecimal.valueOf(levelGain), Transactor.SERVER);
+            final boolean success = account.addBalance(BigDecimal.valueOf(levelGain), Transactor.SERVER);
+
+            if (!success) {
+                // Transaction failed
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-transaction-failed",
+                        this.plugin.getMiniMessage()
+                ));
+                player.setExp(player.getExp() - amount);
+            }
         });
     }
 
@@ -120,7 +129,16 @@ public class PlayerListener implements Listener {
             if (newLevel < oldLevel && !player.isDead()) {
                 final int levelsSpent = oldLevel - newLevel;
 
-                account.subtractBalance(BigDecimal.valueOf(levelsSpent), Transactor.SERVER);
+                final boolean success = account.subtractBalance(BigDecimal.valueOf(levelsSpent), Transactor.SERVER);
+
+                if (!success) {
+                    // Transaction failed
+                    player.sendMessage(this.plugin.getConfigController().getMessage(
+                            "error-transaction-failed",
+                            this.plugin.getMiniMessage()
+                    ));
+                    player.setLevel(oldLevel);
+                }
             }
         });
     }
@@ -141,13 +159,32 @@ public class PlayerListener implements Listener {
             if (optionsConfig.isLoseBalanceOnDeath()) {
                 final BigDecimal amount = optionsConfig.getLoseBalanceOnDeathAmount();
                 final String currency = EconomyUtils.format(this.plugin, amount);
-                account.subtractBalance(amount, Transactor.SERVER);
+
+                final boolean accountSuccess = account.subtractBalance(amount, Transactor.SERVER);
+
+                if (!accountSuccess) {
+                    // Transaction failed
+                    player.sendMessage(this.plugin.getConfigController().getMessage(
+                            "error-transaction-failed",
+                            this.plugin.getMiniMessage()
+                    ));
+                    return;
+                }
 
                 final Player killer = event.getEntity().getKiller();
                 if (killer != null) {
                     // Add to killer balance
                     this.plugin.getAccountController().getPlayerAccount(killer).ifPresent(killerAccount -> {
-                        killerAccount.addBalance(amount, Transactor.SERVER);
+                        final boolean killerSuccess = killerAccount.addBalance(amount, Transactor.SERVER);
+
+                        if (!killerSuccess) {
+                            // Transaction failed
+                            player.sendMessage(this.plugin.getConfigController().getMessage(
+                                    "error-transaction-failed",
+                                    this.plugin.getMiniMessage()
+                            ));
+                            return;
+                        }
 
                         killer.sendMessage(this.plugin.getConfigController().getMessage(
                                 "economy-death-killer",
@@ -204,7 +241,18 @@ public class PlayerListener implements Listener {
 
                         // Add balance to player account
                         final int amount = item.getAmount();
-                        account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+                        final boolean success = account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+
+                        if (!success) {
+                            // Transaction failed
+                            player.sendMessage(this.plugin.getConfigController().getMessage(
+                                    "error-transaction-failed",
+                                    this.plugin.getMiniMessage()
+                            ));
+
+                            event.setCancelled(true);
+                            return;
+                        }
 
                         // Remove item from inventory
                         if (player.getInventory().getItemInMainHand().equals(item)) {

@@ -95,7 +95,16 @@ public final class BottleCommand {
             }
 
             // Subtract amount from player account
-            account.subtractBalance(amountDecimal, Transactor.SERVER);
+            boolean success = account.subtractBalance(amountDecimal, Transactor.SERVER);
+
+            if (!success) {
+                // Transaction failed
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-transaction-failed",
+                        this.plugin.getMiniMessage()
+                ));
+                return;
+            }
 
             // Handle item distribution
             int remainingToGive = amount;

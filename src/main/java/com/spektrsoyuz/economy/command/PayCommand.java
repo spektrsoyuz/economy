@@ -93,8 +93,27 @@ public final class PayCommand {
                     return this.plugin.getAccountController().getPlayerAccount(targetPlayer)
                             .map(targetAccount -> {
                                 // Perform the transaction
-                                account.subtractBalance(amountBD, Transactor.PLAYER);
-                                targetAccount.addBalance(amountBD, Transactor.PLAYER);
+                                final boolean accountSuccess = account.subtractBalance(amountBD, Transactor.PLAYER);
+
+                                if (!accountSuccess) {
+                                    // Transaction failed
+                                    player.sendMessage(this.plugin.getConfigController().getMessage(
+                                            "error-transaction-failed",
+                                            this.plugin.getMiniMessage()
+                                    ));
+                                    return 0;
+                                }
+
+                                final boolean targetSuccess = targetAccount.addBalance(amountBD, Transactor.PLAYER);
+
+                                if (!targetSuccess) {
+                                    // Transaction failed
+                                    player.sendMessage(this.plugin.getConfigController().getMessage(
+                                            "error-transaction-failed",
+                                            this.plugin.getMiniMessage()
+                                    ));
+                                    return 0;
+                                }
 
                                 final String name = account.getDisplayName();
                                 final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
