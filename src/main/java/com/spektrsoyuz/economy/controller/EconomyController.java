@@ -7,13 +7,16 @@ import com.spektrsoyuz.economy.model.account.Transactor;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controller class for economy transactions.
@@ -144,20 +147,27 @@ public final class EconomyController {
     public int handleWithdrawal(final Player player, final int requestedAmount, final CurrencyConfig config) {
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
             final BigDecimal currentBalance = account.getBalance();
+            final int balance = currentBalance.intValue();
 
-            // Determine how much value can be withdrawn
-            final int availableSpace = this.calculateAvailableSpace(player, config);
-            final int balanceInt = currentBalance.intValue();
-            final int actualWithdrawAmount = Math.min(requestedAmount, Math.min(balanceInt, availableSpace));
+            // Cap the request by the account balance
+            final int actualWithdrawAmount = Math.min(requestedAmount, balance);
 
-            // Error handling for edge cases
             if (actualWithdrawAmount <= 0) {
-                final String errorKey = (balanceInt <= 0)
-                        ? "error-not-enough-balance"
-                        : "error-not-enough-inventory-space";
-
                 player.sendMessage(this.plugin.getConfigController().getMessage(
-                        errorKey,
+                        "error-not-enough-balance",
+                        this.plugin.getMiniMessage()
+                ));
+                EconomyUtils.playErrorSound(player);
+                return;
+            }
+
+            // Calculate the item stacks
+            final List<ItemStack> stacksToGive = this.getFittingWithdrawalStacks(player, config, actualWithdrawAmount);
+
+            // Check if player has enough inventory space
+            if (stacksToGive == null) {
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-not-enough-inventory-space",
                         this.plugin.getMiniMessage()
                 ));
 
@@ -165,10 +175,11 @@ public final class EconomyController {
                 return;
             }
 
-            // Subtract the partial/full amount from player account
+            // Subtract the amount from the player's account
             final BigDecimal amountToSubtract = BigDecimal.valueOf(actualWithdrawAmount);
             final boolean success = account.subtractBalance(amountToSubtract, Transactor.SERVER);
 
+            // Check if the transaction failed
             if (!success) {
                 player.sendMessage(this.plugin.getConfigController().getMessage(
                         "error-transaction-failed",
@@ -178,8 +189,10 @@ public final class EconomyController {
                 return;
             }
 
-            // Distribute items
-            EconomyUtils.distributeItems(player, config, actualWithdrawAmount);
+            // Distribute items to player
+            for (final ItemStack stack : stacksToGive) {
+                player.getInventory().addItem(stack);
+            }
 
             // Send message to player
             final String currencyFormatted = EconomyUtils.format(this.plugin, amountToSubtract);
@@ -204,33 +217,87 @@ public final class EconomyController {
         return Command.SINGLE_SUCCESS;
     }
 
-    // Calculates how much total currency value the player can fit in their inventory
-    private int calculateAvailableSpace(final Player player, final CurrencyConfig config) {
-        int totalValueSpace = 0;
+    // Finds a combination of items that fits in the player's inventory
+    private List<ItemStack> getFittingWithdrawalStacks(final Player player, final CurrencyConfig config, final int amount) {
+        // Try the optimal approach first
+        final List<ItemStack> optimalStacks = this.buildStacks(config, amount, true);
+        if (optimalStacks != null && this.doesFit(player, optimalStacks)) {
+            return optimalStacks;
+        }
 
-        // Get the highest value item available for the currency
-        final int highestDenominationValue = config.getItems().values().stream()
-                .mapToInt(Integer::intValue)
-                .max()
-                .orElse(0);
+        // Fallback with the lowest value item
+        final List<ItemStack> fallbackStacks = this.buildStacks(config, amount, false);
+        if (fallbackStacks != null && this.doesFit(player, fallbackStacks)) {
+            return fallbackStacks;
+        }
 
-        if (highestDenominationValue == 0) return 0;
+        return null;
+    }
 
-        for (final ItemStack item : player.getInventory().getStorageContents()) {
-            if (item == null || item.getType().isAir()) {
-                // An empty slot can hold 64 of the highest value item
-                totalValueSpace += (64 * highestDenominationValue);
-            } else {
-                int value = config.getItemValue(item.getType());
+    // Builds a list of ItemStacks for a specific amount
+    private List<ItemStack> buildStacks(final CurrencyConfig config, final int amount, final boolean useOptimal) {
+        final List<ItemStack> items = new ArrayList<>();
+        int remainingToGive = amount;
 
-                // Calculate remaining stack space
-                if (value > 0 && item.getAmount() < 64) {
-                    totalValueSpace += (64 - item.getAmount()) * value;
+        final List<Map.Entry<String, Integer>> sortedItems = new ArrayList<>(config.getItems().entrySet());
+        sortedItems.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+
+        if (useOptimal) {
+            // Check highest value
+            for (final Map.Entry<String, Integer> entry : sortedItems) {
+                if (remainingToGive <= 0) break;
+
+                final Material material = Material.matchMaterial(entry.getKey());
+                if (material == null) continue;
+
+                final int itemValue = entry.getValue();
+                final int countToGive = remainingToGive / itemValue;
+
+                if (countToGive > 0) {
+                    this.addStacksToList(items, material, countToGive);
+                    remainingToGive %= itemValue;
                 }
+            }
+        } else {
+            // Check lowest value
+            final Map.Entry<String, Integer> lowestValue = sortedItems.getLast();
+            final Material material = Material.matchMaterial(lowestValue.getKey());
+            final int itemValue = lowestValue.getValue();
+
+            if (material != null && itemValue > 0) {
+                // Only proceed if it divides perfectly
+                if (remainingToGive % itemValue == 0) {
+                    final int countToGive = remainingToGive / itemValue;
+                    this.addStacksToList(items, material, countToGive);
+                } else {
+                    // Does not fit in inventory
+                    return null;
+                }
+            } else {
+                return null;
             }
         }
 
-        return totalValueSpace;
+        return items;
+    }
+
+    // Breaks large amounts of a material into max-sized stacks
+    private void addStacksToList(final List<ItemStack> list, final Material material, final int totalAmount) {
+        int amountLeft = totalAmount;
+        while (amountLeft > 0) {
+            final int stackSize = Math.min(amountLeft, material.getMaxStackSize());
+            list.add(new ItemStack(material, stackSize));
+            amountLeft -= stackSize;
+        }
+    }
+
+    // Simulates adding items to a virtual copy of the player's inventory
+    private boolean doesFit(final Player player, final List<ItemStack> itemsToGive) {
+        final Inventory inventory = this.plugin.getServer().createInventory(null, 36);
+        inventory.setContents(player.getInventory().getStorageContents());
+
+        final Map<Integer, ItemStack> leftovers = inventory.addItem(itemsToGive.toArray(new ItemStack[0]));
+        return leftovers.isEmpty();
     }
 
     // Model record for the value of an inventory slot
