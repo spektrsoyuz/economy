@@ -313,10 +313,16 @@ public class PlayerListener implements Listener {
     }
 
     // Handles currency conversion
-    private void processItemExchange(final PlayerInteractEvent event, final ItemStack item, final CurrencyConfig config, final int valuePerItem) {
+    private void processItemExchange(
+            final PlayerInteractEvent event,
+            final ItemStack item,
+            final CurrencyConfig config,
+            final int valuePerItem
+    ) {
         final Player player = event.getPlayer();
 
-        this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresentOrElse(account -> {
+            // Account found
             event.setCancelled(true);
 
             // Handle transaction
@@ -343,6 +349,12 @@ public class PlayerListener implements Listener {
             ));
 
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        }, () -> {
+            // No account found
+            this.plugin.getComponentLogger().error(
+                    "Item exchange failed, account not found for player '{}'",
+                    player.getName()
+            );
         });
     }
 
