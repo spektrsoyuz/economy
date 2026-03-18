@@ -150,33 +150,42 @@ public final class EconomyController {
             final int balance = currentBalance.intValue();
 
             // Cap the request by the account balance
-            final int actualWithdrawAmount = Math.min(requestedAmount, balance);
+            int amountToTry = Math.min(requestedAmount, balance);
 
-            if (actualWithdrawAmount <= 0) {
+            if (amountToTry <= 0) {
                 player.sendMessage(this.plugin.getConfigController().getMessage(
                         "error-not-enough-balance",
                         this.plugin.getMiniMessage()
                 ));
+
                 EconomyUtils.playErrorSound(player);
                 return;
             }
 
             // Calculate the item stacks
-            final List<ItemStack> stacksToGive = this.getFittingWithdrawalStacks(player, config, actualWithdrawAmount);
+            List<ItemStack> stacksToGive = this.getFittingWithdrawalStacks(player, config, amountToTry);
+            int finalAmount = amountToTry;
 
-            // Check if player has enough inventory space
+            // If the requested amount doesn't fit, we try to find the max that does
             if (stacksToGive == null) {
-                player.sendMessage(this.plugin.getConfigController().getMessage(
-                        "error-not-enough-inventory-space",
-                        this.plugin.getMiniMessage()
-                ));
+                finalAmount = this.calculateMaxFit(player, config, amountToTry);
+                if (finalAmount <= 0) {
+                    // Not enough inventory space
+                    player.sendMessage(this.plugin.getConfigController().getMessage(
+                            "error-not-enough-inventory-space",
+                            this.plugin.getMiniMessage()
+                    ));
 
-                EconomyUtils.playErrorSound(player);
-                return;
+                    EconomyUtils.playErrorSound(player);
+                    return;
+                }
+                stacksToGive = this.buildStacks(config, finalAmount, true);
             }
 
+            if (stacksToGive == null || stacksToGive.isEmpty()) return;
+
             // Subtract the amount from the player's account
-            final BigDecimal amountToSubtract = BigDecimal.valueOf(actualWithdrawAmount);
+            final BigDecimal amountToSubtract = BigDecimal.valueOf(finalAmount);
             final boolean success = account.subtractBalance(amountToSubtract, Transactor.SERVER);
 
             // Check if the transaction failed
@@ -201,7 +210,7 @@ public final class EconomyController {
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     messageKey,
                     this.plugin.getMiniMessage(),
-                    Placeholder.parsed("amount", String.valueOf(actualWithdrawAmount)),
+                    Placeholder.parsed("amount", String.valueOf(finalAmount)),
                     Placeholder.parsed("currency", currencyFormatted)
             ));
 
@@ -239,8 +248,8 @@ public final class EconomyController {
         final List<ItemStack> items = new ArrayList<>();
         int remainingToGive = amount;
 
-        final List<Map.Entry<String, Integer>> sortedItems = new ArrayList<>(config.getItems().entrySet());
-        sortedItems.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        // Sort items based on their value per stack
+        final List<Map.Entry<String, Integer>> sortedItems = this.getSortedStacks(config);
 
         if (useOptimal) {
             // Check highest value
@@ -251,7 +260,7 @@ public final class EconomyController {
                 if (material == null) continue;
 
                 final int itemValue = entry.getValue();
-                final int countToGive = remainingToGive / itemValue;
+                int countToGive = remainingToGive / itemValue;
 
                 if (countToGive > 0) {
                     this.addStacksToList(items, material, countToGive);
@@ -281,6 +290,26 @@ public final class EconomyController {
         return items;
     }
 
+    // Gets a list of stacks sorted by value
+    private List<Map.Entry<String, Integer>> getSortedStacks(final CurrencyConfig config) {
+        final List<Map.Entry<String, Integer>> sortedItems = new ArrayList<>(config.getItems().entrySet());
+
+        sortedItems.sort((a, b) -> {
+            final Material matA = Material.matchMaterial(a.getKey());
+            final Material matB = Material.matchMaterial(b.getKey());
+            final int stackA = (matA != null) ? matA.getMaxStackSize() : 64;
+            final int stackB = (matB != null) ? matB.getMaxStackSize() : 64;
+
+            // Compare (Value * MaxStackSize)
+            final long totalValA = (long) a.getValue() * stackA;
+            final long totalValB = (long) b.getValue() * stackB;
+
+            // Return highest density first
+            return Long.compare(totalValB, totalValA);
+        });
+        return sortedItems;
+    }
+
     // Breaks large amounts of a material into max-sized stacks
     private void addStacksToList(final List<ItemStack> list, final Material material, final int totalAmount) {
         int amountLeft = totalAmount;
@@ -298,6 +327,31 @@ public final class EconomyController {
 
         final Map<Integer, ItemStack> leftovers = inventory.addItem(itemsToGive.toArray(new ItemStack[0]));
         return leftovers.isEmpty();
+    }
+
+    // Calculates the maximum amount of currency that can fit in a player's inventory
+    private int calculateMaxFit(final Player player, final CurrencyConfig config, int maxAmount) {
+        int low = 0;
+        int high = maxAmount;
+        int bestFit = 0;
+
+        // Binary search for the highest amount that fits
+        while (low <= high) {
+            int mid = low + (high - low) / 2;
+            if (mid <= 0) {
+                low = mid + 1;
+                continue;
+            }
+
+            final List<ItemStack> testStacks = this.buildStacks(config, mid, true);
+            if (testStacks != null && this.doesFit(player, testStacks)) {
+                bestFit = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return bestFit;
     }
 
     // Model record for the value of an inventory slot
