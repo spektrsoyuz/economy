@@ -15,7 +15,7 @@ import org.bukkit.event.entity.ExpBottleEvent;
  * @since 1.0.0
  */
 @RequiredArgsConstructor
-public class EntityListener implements Listener {
+public final class EntityListener implements Listener {
 
     private final EconomyPlugin plugin;
 

@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
  * @since 1.0.0
  */
 @RequiredArgsConstructor
-public class AccountSuggestionProvider implements SuggestionProvider<CommandSourceStack> {
+public final class AccountSuggestionProvider implements SuggestionProvider<CommandSourceStack> {
 
     private final EconomyPlugin plugin;
 

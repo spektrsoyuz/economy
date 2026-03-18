@@ -33,7 +33,7 @@ import java.util.UUID;
  * @since 1.0.0
  */
 @RequiredArgsConstructor
-public class PlayerListener implements Listener {
+public final class PlayerListener implements Listener {
 
     private final EconomyPlugin plugin;
 

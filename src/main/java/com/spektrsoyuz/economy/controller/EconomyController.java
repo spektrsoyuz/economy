@@ -331,27 +331,51 @@ public final class EconomyController {
 
     // Calculates the maximum amount of currency that can fit in a player's inventory
     private int calculateMaxFit(final Player player, final CurrencyConfig config, int maxAmount) {
-        int low = 0;
-        int high = maxAmount;
-        int bestFit = 0;
+        final Inventory inventory = this.plugin.getServer().createInventory(null, 36);
+        inventory.setContents(player.getInventory().getStorageContents());
 
-        // Binary search for the highest amount that fits
-        while (low <= high) {
-            int mid = low + (high - low) / 2;
-            if (mid <= 0) {
-                low = mid + 1;
-                continue;
-            }
+        int totalFittedValue = 0;
+        int remainingToFit = maxAmount;
 
-            final List<ItemStack> testStacks = this.buildStacks(config, mid, true);
-            if (testStacks != null && this.doesFit(player, testStacks)) {
-                bestFit = mid;
-                low = mid + 1;
-            } else {
-                high = mid - 1;
+        // Iterate through items starting with the highest density (value * maxStackSize)
+        for (final Map.Entry<String, Integer> entry : this.getSortedStacks(config)) {
+            if (remainingToFit <= 0) break;
+
+            final Material material = Material.matchMaterial(entry.getKey());
+            if (material == null) continue;
+
+            final int itemValue = entry.getValue();
+            final int neededItems = remainingToFit / itemValue;
+
+            if (neededItems > 0) {
+                // Break the needed items into max stack sizes
+                int itemsLeft = neededItems;
+                final List<ItemStack> stacksToAdd = new ArrayList<>();
+
+                while (itemsLeft > 0) {
+                    int stackSize = Math.min(itemsLeft, material.getMaxStackSize());
+                    stacksToAdd.add(new ItemStack(material, stackSize));
+                    itemsLeft -= stackSize;
+                }
+
+                // Attempt to add all needed items to the dummy inventory
+                final Map<Integer, ItemStack> leftovers = inventory.addItem(stacksToAdd.toArray(new ItemStack[0]));
+
+                // Calculate how many items actually fit
+                int itemsNotAdded = 0;
+                for (final ItemStack leftover : leftovers.values()) {
+                    itemsNotAdded += leftover.getAmount();
+                }
+
+                final int itemsAdded = neededItems - itemsNotAdded;
+                final int valueAdded = itemsAdded * itemValue;
+
+                totalFittedValue += valueAdded;
+                remainingToFit -= valueAdded;
             }
         }
-        return bestFit;
+
+        return totalFittedValue;
     }
 
     // Model record for the value of an inventory slot
