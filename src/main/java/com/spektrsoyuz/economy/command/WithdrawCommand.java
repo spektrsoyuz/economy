@@ -13,6 +13,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.entity.PlayerGiveResult;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -161,6 +162,7 @@ public final class WithdrawCommand {
                     Placeholder.parsed("currency", currencyFormatted)
             ));
 
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }, () -> {
             // Account not found
             player.sendMessage(this.plugin.getConfigController().getMessage(

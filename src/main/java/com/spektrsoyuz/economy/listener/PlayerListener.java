@@ -10,6 +10,7 @@ import com.spektrsoyuz.economy.model.config.OptionsConfig;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -96,7 +97,6 @@ public class PlayerListener implements Listener {
         this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
             // Convert raw XP points to a fraction of a level
             final double levelGain = (double) amount / Constants.LEVEL_COST;
-
             final boolean success = account.addBalance(BigDecimal.valueOf(levelGain), Transactor.SERVER);
 
             if (!success) {
@@ -137,6 +137,7 @@ public class PlayerListener implements Listener {
                             "error-transaction-failed",
                             this.plugin.getMiniMessage()
                     ));
+
                     player.setLevel(oldLevel);
                     EconomyUtils.playErrorSound(player);
                 }
@@ -169,6 +170,7 @@ public class PlayerListener implements Listener {
                             "error-transaction-failed",
                             this.plugin.getMiniMessage()
                     ));
+
                     EconomyUtils.playErrorSound(player);
                     return;
                 }
@@ -195,6 +197,8 @@ public class PlayerListener implements Listener {
                                 Placeholder.parsed("player", player.getName()),
                                 Placeholder.parsed("currency", currency)
                         ));
+
+                        killer.playSound(killer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
                     });
 
                     // Send killed message to player
@@ -274,6 +278,8 @@ public class PlayerListener implements Listener {
                     Placeholder.parsed("amount", String.valueOf(amount)),
                     Placeholder.parsed("currency", EconomyUtils.format(this.plugin, value))
             ));
+
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         });
     }
 

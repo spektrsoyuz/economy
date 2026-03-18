@@ -211,7 +211,8 @@ public final class AccountController {
             final int newLevel = (int) balance;
             final float progress = (float) (balance - newLevel);
 
-            if (newLevel > player.getLevel()) {
+            if (newLevel / 5 > player.getLevel() / 5) {
+                // Play level up sound every 5 levels
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
             }
 

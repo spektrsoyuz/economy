@@ -17,6 +17,7 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -128,6 +129,9 @@ public final class PayCommand {
 
         this.sendMessage(sender, "command-pay-send", tags);
         this.sendMessage(target, "command-pay-receive", tags);
+
+        sender.playSound(sender.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
     }
 
     // Handles a transaction error
