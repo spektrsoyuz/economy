@@ -85,7 +85,7 @@ public final class EconomyPlugin extends JavaPlugin {
 
             new BalanceCommand(this).register(registrar);
             new BalanceTopCommand(this).register(registrar);
-            new ConvertCommand(this).register(registrar);
+            new WithdrawCommand(this).register(registrar);
             new EconomyCommand(this).register(registrar);
             new PayCommand(this).register(registrar);
         });

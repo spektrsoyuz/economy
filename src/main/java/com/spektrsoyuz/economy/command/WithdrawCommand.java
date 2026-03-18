@@ -20,12 +20,12 @@ import org.bukkit.inventory.ItemStack;
 import java.math.BigDecimal;
 
 /**
- * Model class for the /convert command.
+ * Model class for the /withdraw command.
  *
  * @since 1.0.0
  */
 @RequiredArgsConstructor
-public final class ConvertCommand {
+public final class WithdrawCommand {
 
     private final EconomyPlugin plugin;
 
@@ -35,13 +35,13 @@ public final class ConvertCommand {
      * @param registrar The command registrar.
      */
     public void register(final Commands registrar) {
-        final var command = Commands.literal("convert")
-                .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_CONVERT))
+        final var command = Commands.literal("withdraw")
+                .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_WITHDRAW))
                 .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                         .executes(this::execute))
                 .build();
 
-        registrar.register(command, "Convert a currency to an item");
+        registrar.register(command, "Withdraw from your bank");
     }
 
     // Executes the command

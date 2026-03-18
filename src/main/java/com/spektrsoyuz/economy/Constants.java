@@ -19,7 +19,8 @@ public final class Constants {
     public static final String PERMISSION_COMMAND_BALANCE = "economy.balance";
     public static final String PERMISSION_COMMAND_BALANCE_ALL = "economy.balance.all";
     public static final String PERMISSION_COMMAND_BALANCE_OTHER = "economy.balance.other";
+    public static final String PERMISSION_COMMAND_DEPOSIT = "economy.deposit";
     public static final String PERMISSION_COMMAND_PAY = "economy.pay";
-    public static final String PERMISSION_COMMAND_CONVERT = "economy.convert";
+    public static final String PERMISSION_COMMAND_WITHDRAW = "economy.withdraw";
 
 }
