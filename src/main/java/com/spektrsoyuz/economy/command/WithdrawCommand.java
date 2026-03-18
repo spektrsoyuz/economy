@@ -46,29 +46,36 @@ public final class WithdrawCommand {
         registrar.register(command, "Withdraw from your bank");
     }
 
-    // Executes the "withdraw all" logic
+    // Executes the command with the 'all' argument
     private int executeAll(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
 
         // Check if sender is a player
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(this.plugin.getConfigController().getMessage("error-sender-not-player", this.plugin.getMiniMessage()));
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-sender-not-player",
+                    this.plugin.getMiniMessage()
+            ));
             return 0;
         }
 
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
 
         return this.plugin.getAccountController().getAccount(player).map(account -> {
             final BigDecimal balance = account.getBalance();
 
             // Check account balance
             if (balance.compareTo(BigDecimal.ONE) < 0) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance", this.plugin.getMiniMessage()));
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-not-enough-balance",
+                        this.plugin.getMiniMessage(),
+                        Placeholder.parsed("currency", config.getNamePlural())
+                ));
                 return 0;
             }
 
-            // Process transaction (handleTransaction handles value-based space checks)
-            return this.handleTransaction(player, balance.intValue(), currencyConfig);
+            // Process transaction
+            return this.handleTransaction(player, balance.intValue(), config);
         }).orElseGet(() -> {
             // Account not found
             player.sendMessage(this.plugin.getConfigController().getMessage(
@@ -79,13 +86,16 @@ public final class WithdrawCommand {
         });
     }
 
-    // Executes the command for a specific amount
+    // Executes the command
     private int execute(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
 
         // Check if sender is a player
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(this.plugin.getConfigController().getMessage("error-sender-not-player", this.plugin.getMiniMessage()));
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-sender-not-player",
+                    this.plugin.getMiniMessage()
+            ));
             return 0;
         }
 
@@ -103,13 +113,20 @@ public final class WithdrawCommand {
 
             // Check account balance
             if (account.getBalance().compareTo(amountDecimal) < 0) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance", this.plugin.getMiniMessage()));
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-not-enough-balance",
+                        this.plugin.getMiniMessage(),
+                        Placeholder.parsed("currency", config.getNamePlural())
+                ));
                 return;
             }
 
             // Check inventory space (value-based)
             if (this.calculateAvailableSpace(player, config) < amount) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-inventory-space", this.plugin.getMiniMessage()));
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-not-enough-inventory-space",
+                        this.plugin.getMiniMessage()
+                ));
                 return;
             }
 
@@ -117,7 +134,11 @@ public final class WithdrawCommand {
             boolean success = account.subtractBalance(amountDecimal, Transactor.SERVER);
 
             if (!success) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-transaction-failed", this.plugin.getMiniMessage()));
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-transaction-failed",
+                        this.plugin.getMiniMessage()
+                ));
+
                 EconomyUtils.playErrorSound(player);
                 return;
             }
