@@ -20,12 +20,12 @@ import org.bukkit.inventory.ItemStack;
 import java.math.BigDecimal;
 
 /**
- * Model class for the /withdraw command.
+ * Model class for the /deposit command.
  *
  * @since 1.0.0
  */
 @RequiredArgsConstructor
-public final class WithdrawCommand {
+public final class DepositCommand {
 
     private final EconomyPlugin plugin;
 
@@ -35,18 +35,18 @@ public final class WithdrawCommand {
      * @param registrar The command registrar.
      */
     public void register(final Commands registrar) {
-        final var command = Commands.literal("withdraw")
-                .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_WITHDRAW))
+        final var command = Commands.literal("deposit")
+                .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_DEPOSIT))
                 .then(Commands.literal("all")
                         .executes(this::executeAll))
                 .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                         .executes(this::execute))
                 .build();
 
-        registrar.register(command, "Withdraw from your bank");
+        registrar.register(command, "Deposit into your bank");
     }
 
-    // Executes the "withdraw all" logic
+    // Executes the command with the 'all' argument
     private int executeAll(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
 
@@ -57,38 +57,25 @@ public final class WithdrawCommand {
         }
 
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+        int totalInInventory = 0;
 
-        return this.plugin.getAccountController().getAccount(player).map(account -> {
-            final BigDecimal balance = account.getBalance();
-
-            // Check account balance
-            if (balance.compareTo(BigDecimal.ONE) < 0) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance", this.plugin.getMiniMessage()));
-                return 0;
+        // Calculate total physical currency in inventory
+        for (final ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.getType().asItemType() == currencyConfig.getItem()) {
+                totalInInventory += item.getAmount();
             }
+        }
 
-            // Limit transaction to available space
-            final int availableSpace = this.calculateAvailableSpace(player, currencyConfig);
-            final int amountToWithdraw = Math.min(balance.intValue(), availableSpace);
-
-            if (amountToWithdraw <= 0) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-inventory-space", this.plugin.getMiniMessage()));
-                return 0;
-            }
-
-            // Process transaction
-            return this.handleTransaction(player, amountToWithdraw, currencyConfig);
-        }).orElseGet(() -> {
-            // No account found
-            player.sendMessage(this.plugin.getConfigController().getMessage(
-                    "error-account-not-found",
-                    this.plugin.getMiniMessage()
-            ));
+        if (totalInInventory <= 0) {
+            player.sendMessage(this.plugin.getConfigController().getMessage("error-no-items-to-deposit", this.plugin.getMiniMessage()));
             return 0;
-        });
+        }
+
+        // Process transaction
+        return this.handleTransaction(player, totalInInventory, currencyConfig);
     }
 
-    // Executes the command for a specific amount
+    // Executes the command
     private int execute(final CommandContext<CommandSourceStack> ctx) {
         final CommandSender sender = ctx.getSource().getSender();
 
@@ -105,54 +92,57 @@ public final class WithdrawCommand {
         return this.handleTransaction(player, amount, currencyConfig);
     }
 
-    // Handles the withdrawal transaction
+    // Handles the deposit transaction
     private int handleTransaction(final Player player, final int amount, final CurrencyConfig currencyConfig) {
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
+
+            // Check if player has enough items
+            if (!player.getInventory().containsAtLeast(currencyConfig.getItem().createItemStack(), amount)) {
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "error-not-enough-items",
+                        this.plugin.getMiniMessage(),
+                        Placeholder.parsed("required", String.valueOf(amount))
+                ));
+                return;
+            }
+
+            // Remove items from inventory
+            int remainingToRemove = amount;
+            final ItemStack[] contents = player.getInventory().getContents();
+
+            for (int i = 0; i < contents.length; i++) {
+                final ItemStack item = contents[i];
+                if (item != null && item.getType().asItemType() == currencyConfig.getItem()) {
+                    final int stackAmount = item.getAmount();
+
+                    if (stackAmount <= remainingToRemove) {
+                        remainingToRemove -= stackAmount;
+                        player.getInventory().setItem(i, null);
+                    } else {
+                        item.setAmount(stackAmount - remainingToRemove);
+                        remainingToRemove = 0;
+                    }
+                }
+
+                if (remainingToRemove <= 0) break;
+            }
+
+            // Add to account balance
             final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
-            final int maxStackSize = currencyConfig.getItem().createItemStack().getMaxStackSize();
+            boolean success = account.addBalance(amountDecimal, Transactor.SERVER);
 
-            // Check account balance
-            if (account.getBalance().compareTo(amountDecimal) < 0) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("not-enough-balance", this.plugin.getMiniMessage()));
-                return;
-            }
-
-            // Check inventory space
-            if (this.calculateAvailableSpace(player, currencyConfig) < amount) {
-                player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-inventory-space", this.plugin.getMiniMessage()));
-                return;
-            }
-
-            // Subtract amount from player account
-            boolean success = account.subtractBalance(amountDecimal, Transactor.SERVER);
-
+            // Handle transaction failure
             if (!success) {
+                this.refundItems(player, currencyConfig, amount);
                 player.sendMessage(this.plugin.getConfigController().getMessage("error-transaction-failed", this.plugin.getMiniMessage()));
+
                 EconomyUtils.playErrorSound(player);
                 return;
             }
 
-            // Handle item distribution
-            int remainingToGive = amount;
-            while (remainingToGive > 0) {
-                final int currentStackSize = Math.min(remainingToGive, maxStackSize);
-                final ItemStack itemStack = currencyConfig.getItem().createItemStack(currentStackSize);
-
-                final PlayerGiveResult result = player.give(itemStack);
-
-                // If space changed, drop remaining items
-                if (!result.leftovers().isEmpty()) {
-                    for (final ItemStack droppedItem : result.leftovers()) {
-                        player.getWorld().dropItem(player.getLocation(), droppedItem);
-                    }
-                }
-
-                remainingToGive -= currentStackSize;
-            }
-
             // Send message to player
             final String currencyFormatted = EconomyUtils.format(this.plugin, amountDecimal);
-            final String messageKey = String.format("economy-%s-withdraw", currencyConfig.getType().name().toLowerCase());
+            final String messageKey = String.format("economy-%s-deposit", currencyConfig.getType().name().toLowerCase());
 
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     messageKey,
@@ -172,20 +162,28 @@ public final class WithdrawCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    // Calculates how many items the player can be given
-    private int calculateAvailableSpace(final Player player, final CurrencyConfig config) {
+    // Refunds items to the player if the transaction fails
+    private void refundItems(final Player player, final CurrencyConfig config, final int amount) {
+        int remainingToRefund = amount;
         final int maxStack = config.getItem().createItemStack().getMaxStackSize();
-        int totalSpace = 0;
 
-        for (final ItemStack item : player.getInventory().getStorageContents()) {
-            if (item == null || item.getType().isAir()) {
-                totalSpace += maxStack;
-            } else if (item.getType().asItemType() == config.getItem()) {
-                totalSpace += (maxStack - item.getAmount());
+        // Iterate over remaining items
+        while (remainingToRefund > 0) {
+            final int toGive = Math.min(remainingToRefund, maxStack);
+            final ItemStack itemStack = config.getItem().createItemStack(toGive);
+
+            // Give item to player
+            final PlayerGiveResult result = player.give(itemStack);
+
+            if (!result.leftovers().isEmpty()) {
+                for (final ItemStack leftover : result.leftovers()) {
+                    // Drop leftovers
+                    player.getWorld().dropItem(player.getLocation(), leftover);
+                }
             }
-        }
 
-        return totalSpace;
+            remainingToRefund -= toGive;
+        }
     }
 
 }

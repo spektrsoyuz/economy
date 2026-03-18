@@ -269,7 +269,7 @@ public class PlayerListener implements Listener {
 
             // Send message to player
             player.sendMessage(this.plugin.getConfigController().getMessage(
-                    String.format("economy-%s-discard", config.getType().name().toLowerCase()),
+                    String.format("economy-%s-deposit", config.getType().name().toLowerCase()),
                     this.plugin.getMiniMessage(),
                     Placeholder.parsed("amount", String.valueOf(amount)),
                     Placeholder.parsed("currency", EconomyUtils.format(this.plugin, value))
