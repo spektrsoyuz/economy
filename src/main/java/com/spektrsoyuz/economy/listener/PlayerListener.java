@@ -8,11 +8,14 @@ import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import com.spektrsoyuz.economy.model.config.OptionsConfig;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 
@@ -180,6 +183,49 @@ public class PlayerListener implements Listener {
 
         // Sync XP bar
         this.plugin.getAccountController().updateExp(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerInteract(final PlayerInteractEvent event) {
+        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
+        if (!currencyConfig.getType().equals("exp")) return;
+
+        final Player player = event.getPlayer();
+        final ItemStack item = event.getItem();
+
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
+            // Check if the item is an experience bottle
+            if (item != null && item.getType() == Material.EXPERIENCE_BOTTLE) {
+                // Check if player is right-clicking
+                if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                    // Check if player is sneaking
+                    if (player.isSneaking()) {
+                        event.setCancelled(true);
+
+                        // Add balance to player account
+                        final int amount = item.getAmount();
+                        account.addBalance(BigDecimal.valueOf(amount), Transactor.SERVER);
+
+                        // Remove item from inventory
+                        if (player.getInventory().getItemInMainHand().equals(item)) {
+                            player.getInventory().setItemInMainHand(null);
+                        } else if (player.getInventory().getItemInOffHand().equals(item)) {
+                            player.getInventory().setItemInOffHand(null);
+                        }
+
+                        // Send message to player
+                        final String currency = EconomyUtils.format(this.plugin, BigDecimal.valueOf(amount));
+
+                        player.sendMessage(this.plugin.getConfigController().getMessage(
+                                "economy-exp-discard",
+                                this.plugin.getMiniMessage(),
+                                Placeholder.parsed("amount", String.valueOf(amount)),
+                                Placeholder.parsed("currency", currency)
+                        ));
+                    }
+                }
+            }
+        });
     }
 
 }

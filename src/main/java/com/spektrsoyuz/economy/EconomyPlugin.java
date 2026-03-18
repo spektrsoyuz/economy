@@ -1,9 +1,6 @@
 package com.spektrsoyuz.economy;
 
-import com.spektrsoyuz.economy.command.BalanceCommand;
-import com.spektrsoyuz.economy.command.BalanceTopCommand;
-import com.spektrsoyuz.economy.command.EconomyCommand;
-import com.spektrsoyuz.economy.command.PayCommand;
+import com.spektrsoyuz.economy.command.*;
 import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
@@ -88,6 +85,7 @@ public final class EconomyPlugin extends JavaPlugin {
 
             new BalanceCommand(this).register(registrar);
             new BalanceTopCommand(this).register(registrar);
+            new BottleCommand(this).register(registrar);
             new EconomyCommand(this).register(registrar);
             new PayCommand(this).register(registrar);
         });
