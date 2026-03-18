@@ -18,8 +18,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Model class for the /convert command.
@@ -43,15 +41,7 @@ public final class ConvertCommand {
                         .executes(this::execute))
                 .build();
 
-        final List<String> aliases = new ArrayList<>();
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-
-        switch (currencyConfig.getType()) {
-            case EXP -> aliases.add("bottle");
-            case ITEM -> aliases.add("withdraw");
-        }
-
-        registrar.register(command, "Convert a currency to an item", aliases);
+        registrar.register(command, "Convert a currency to an item");
     }
 
     // Executes the command
