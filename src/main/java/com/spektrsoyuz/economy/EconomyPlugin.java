@@ -4,6 +4,7 @@ import com.spektrsoyuz.economy.command.*;
 import com.spektrsoyuz.economy.controller.AccountController;
 import com.spektrsoyuz.economy.controller.ConfigController;
 import com.spektrsoyuz.economy.controller.DataController;
+import com.spektrsoyuz.economy.controller.EconomyController;
 import com.spektrsoyuz.economy.listener.EntityListener;
 import com.spektrsoyuz.economy.listener.PlayerListener;
 import com.spektrsoyuz.economy.model.vault.EconomyImpl;
@@ -32,6 +33,7 @@ public final class EconomyPlugin extends JavaPlugin {
     private final AccountController accountController = new AccountController(this);
     private final ConfigController configController = new ConfigController(this);
     private final DataController dataController = new DataController(this);
+    private final EconomyController economyController = new EconomyController(this);
 
     private final AccountQueueTask accountQueueTask = new AccountQueueTask(this);
     private final TransactionQueueTask transactionQueueTask = new TransactionQueueTask(this);
