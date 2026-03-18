@@ -33,6 +33,9 @@ public final class DataController {
     private HikariDataSource dataSource;
     private Jdbi jdbi;
 
+    /**
+     * Initializes the controller.
+     */
     public void initialize() {
         final StorageConfig storageConfig = this.plugin.getConfigController().getStorageConfig();
         final OptionsConfig optionsConfig = this.plugin.getConfigController().getOptionsConfig();
@@ -65,6 +68,13 @@ public final class DataController {
         });
     }
 
+    /**
+     * Configures the HikariCP connection pool with database credentials
+     * and performance optimizations for MySQL.
+     *
+     * @param storageConfig The configuration containing database credentials.
+     * @return A configured {@link HikariConfig} instance.
+     */
     private @NotNull HikariConfig getHikariConfig(final StorageConfig storageConfig) {
         final HikariConfig hikariConfig = new HikariConfig();
         final String url = String.format("jdbc:mysql://%s:%s/%s",
@@ -86,6 +96,11 @@ public final class DataController {
         return hikariConfig;
     }
 
+    /**
+     * Asynchronously saves an account's state to the database.
+     *
+     * @param account The account memento to persist.
+     */
     public void saveAccount(final Account.Memento account) {
         CompletableFuture.runAsync(() ->
                 this.jdbi.useExtension(EconomyDao.class, dao -> dao.saveAccount(account))
@@ -95,6 +110,11 @@ public final class DataController {
         });
     }
 
+    /**
+     * Asynchronously saves a transaction record to the database.
+     *
+     * @param transaction The transaction to persist.
+     */
     public void saveTransaction(final Transaction transaction) {
         CompletableFuture.runAsync(() ->
                 this.jdbi.useExtension(EconomyDao.class, dao -> dao.saveTransaction(transaction))
@@ -104,6 +124,11 @@ public final class DataController {
         });
     }
 
+    /**
+     * Asynchronously deletes an account from the database by its unique ID.
+     *
+     * @param id The UUID of the account to remove.
+     */
     public void deleteAccount(final UUID id) {
         CompletableFuture.runAsync(() ->
                 this.jdbi.useExtension(EconomyDao.class, dao -> dao.deleteAccount(id.toString()))
@@ -113,6 +138,12 @@ public final class DataController {
         });
     }
 
+    /**
+     * Asynchronously retrieves an account from the database by its UUID.
+     *
+     * @param id The UUID to search for.
+     * @return A {@link CompletableFuture} containing an {@link Optional} account.
+     */
     public CompletableFuture<Optional<Account>> queryAccount(final UUID id) {
         return CompletableFuture.supplyAsync(() ->
                 this.jdbi.withExtension(EconomyDao.class, dao ->
@@ -124,6 +155,12 @@ public final class DataController {
         });
     }
 
+    /**
+     * Asynchronously retrieves an account from the database by its name.
+     *
+     * @param name The name to search for.
+     * @return A {@link CompletableFuture} containing an {@link Optional} account.
+     */
     public CompletableFuture<Optional<Account>> queryAccount(final String name) {
         return CompletableFuture.supplyAsync(() ->
                 this.jdbi.withExtension(EconomyDao.class, dao ->
@@ -135,6 +172,11 @@ public final class DataController {
         });
     }
 
+    /**
+     * Asynchronously retrieves all accounts stored in the database.
+     *
+     * @return A {@link CompletableFuture} containing a set of all accounts.
+     */
     public CompletableFuture<Set<Account>> queryAccounts() {
         return CompletableFuture.supplyAsync(() ->
                 this.jdbi.withExtension(EconomyDao.class, dao ->
@@ -147,9 +189,13 @@ public final class DataController {
         });
     }
 
+    /**
+     * Closes the database connection pool.
+     */
     public void close() {
         if (this.dataSource != null && !this.dataSource.isClosed()) {
             this.dataSource.close();
         }
     }
+
 }

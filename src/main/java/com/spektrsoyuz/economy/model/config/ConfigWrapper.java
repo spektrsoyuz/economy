@@ -23,7 +23,12 @@ public final class ConfigWrapper {
     @Getter
     private CommentedConfigurationNode node;
 
-    // Constructor
+    /**
+     * Constructs a new config wrapper.
+     *
+     * @param plugin   The economy plugin instance.
+     * @param fileName The name of the file (e.g., "config.conf").
+     */
     public ConfigWrapper(
             final EconomyPlugin plugin,
             final String fileName
@@ -46,7 +51,9 @@ public final class ConfigWrapper {
                 .build();
     }
 
-    // Loads the config
+    /**
+     * Synchronously loads the configuration from disk into the {@link #node}.
+     */
     public void load() {
         try {
             this.node = this.loader.load();
@@ -56,7 +63,9 @@ public final class ConfigWrapper {
         }
     }
 
-    // Saves the config
+    /**
+     * Persists the current in-memory {@link #node} state back to the disk.
+     */
     public void save() {
         if (this.node == null) return;
 

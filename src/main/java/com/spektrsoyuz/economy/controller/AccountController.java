@@ -27,7 +27,9 @@ public final class AccountController {
     private final Map<UUID, Account> onlineAccounts = new ConcurrentHashMap<>();
     private final List<Account> topAccounts = new ArrayList<>();
 
-    // Initializes the controller
+    /**
+     * Initializes the controller.
+     */
     public void initialize() {
         this.plugin.getComponentLogger().info("Loading accounts into cache");
 
@@ -36,17 +38,32 @@ public final class AccountController {
         this.plugin.getComponentLogger().info("Loaded {} accounts into cache", this.accounts.size());
     }
 
-    // Gets an account from the cache by its ID
+    /**
+     * Retrieves an account from the global cache by its unique ID.
+     *
+     * @param id The UUID of the account.
+     * @return An {@link Optional} containing the account if found.
+     */
     public Optional<Account> getAccount(final UUID id) {
         return Optional.ofNullable(this.accounts.get(id));
     }
 
-    // Gets an account from the cache using a Bukkit player
+    /**
+     * Retrieves an account from the global cache using a Bukkit player.
+     *
+     * @param player The online player.
+     * @return An {@link Optional} containing the account if found.
+     */
     public Optional<Account> getAccount(final Player player) {
         return this.getAccount(player.getUniqueId());
     }
 
-    // Gets an Account from the cache by its name
+    /**
+     * Retrieves an account from the global cache by the account name.
+     *
+     * @param name The name associated with the account.
+     * @return An {@link Optional} containing the account if found.
+     */
     public Optional<Account> getAccount(final String name) {
         for (final Account account : this.accounts.values()) {
             if (account.getName().equals(name)) return Optional.of(account);
@@ -54,17 +71,32 @@ public final class AccountController {
         return Optional.empty();
     }
 
-    // Gets a player account from the cache by its ID
+    /**
+     * Retrieves an account from the online-only cache by its unique ID.
+     *
+     * @param id The UUID of the online player.
+     * @return An {@link Optional} containing the account if the player is online.
+     */
     public Optional<Account> getPlayerAccount(final UUID id) {
         return Optional.ofNullable(this.onlineAccounts.get(id));
     }
 
-    // Gets a player account from the cache using a Bukkit player
+    /**
+     * Retrieves an account from the online-only cache for a specific player.
+     *
+     * @param player The online player.
+     * @return An {@link Optional} containing the account if the player is online.
+     */
     public Optional<Account> getPlayerAccount(final Player player) {
         return this.getPlayerAccount(player.getUniqueId());
     }
 
-    // Gets a player account from the cache by its name
+    /**
+     * Retrieves an account from the online-only cache by the player's name.
+     *
+     * @param name The name of the online player.
+     * @return An {@link Optional} containing the account if the player is online.
+     */
     public Optional<Account> getPlayerAccount(final String name) {
         for (final Account account : this.onlineAccounts.values()) {
             if (account.getName().equals(name)) return Optional.of(account);
@@ -72,7 +104,14 @@ public final class AccountController {
         return Optional.empty();
     }
 
-    // Creates a new account and adds it to the cache
+    /**
+     * Creates a new economy account with the configured starting balance
+     * and adds it to the cache.
+     *
+     * @param id   The unique ID for the new account.
+     * @param name The name to associate with the account.
+     * @return The newly created {@link Account}.
+     */
     public Account createAccount(final UUID id, final String name) {
         final BigDecimal balance = BigDecimal.valueOf(this.plugin.getConfigController().getCurrencyConfig().getStartingBalance());
         final Account account = Account.builder()
@@ -86,7 +125,12 @@ public final class AccountController {
         return account;
     }
 
-    // Deletes an account from the cache
+    /**
+     * Removes an account from the cache and deletes its data from the database.
+     *
+     * @param id The UUID of the account to delete.
+     * @return {@code true} if the deletion process was initiated.
+     */
     public boolean deleteAccount(final UUID id) {
         this.accounts.remove(id);
 
@@ -94,7 +138,11 @@ public final class AccountController {
         return true;
     }
 
-    // Load all accounts into the cache from the database
+    /**
+     * Loads all accounts from the database into the primary cache.
+     *
+     * @return A {@link CompletableFuture} that completes when the load is finished.
+     */
     private CompletableFuture<Void> loadAccounts() {
         return this.plugin.getDataController().queryAccounts().thenAccept(accounts -> {
             for (final Account account : accounts) {
@@ -103,7 +151,13 @@ public final class AccountController {
         });
     }
 
-    // Sets the account name to a new name
+    /**
+     * Updates the name associated with an account in the cache.
+     *
+     * @param id   The UUID of the account.
+     * @param name The new name to set.
+     * @return {@code true} if the account was found and renamed successfully.
+     */
     public boolean renameAccount(final UUID id, final String name) {
         final Account account = this.accounts.get(id);
 
@@ -113,23 +167,40 @@ public final class AccountController {
         return false;
     }
 
-    // Updates the top accounts
+    /**
+     * Refreshes the leaderboard list with the provided set of accounts.
+     *
+     * @param accounts The new list of top accounts.
+     */
     public void updateTopAccounts(final List<Account> accounts) {
         this.topAccounts.clear();
         this.topAccounts.addAll(accounts);
     }
 
-    // Adds a player account
+    /**
+     * Tracks an account in the online player cache.
+     *
+     * @param account The account belonging to the connecting player.
+     */
     public void addPlayerAccount(final Account account) {
         this.onlineAccounts.put(account.getId(), account);
     }
 
-    // Removes a player account
+    /**
+     * Ceases tracking an account in the online player cache.
+     *
+     * @param account The account belonging to the disconnecting player.
+     */
     public void removePlayerAccount(final Account account) {
         this.onlineAccounts.remove(account.getId());
     }
 
-    // Updates a player's experience to match their economy account
+    /**
+     * Synchronizes a player's Minecraft experience and level to match
+     * their economy account balance.
+     *
+     * @param player The player whose experience bar should be updated.
+     */
     public void updateExp(final Player player) {
         this.getPlayerAccount(player).ifPresent(account -> {
             final double balance = account.getBalance().doubleValue();
