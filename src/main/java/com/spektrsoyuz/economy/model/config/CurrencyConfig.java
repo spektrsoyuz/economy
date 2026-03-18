@@ -3,6 +3,8 @@ package com.spektrsoyuz.economy.model.config;
 import lombok.Getter;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
+import java.math.BigDecimal;
+
 /**
  * Model class for the currency config.
  *
@@ -28,4 +30,10 @@ public final class CurrencyConfig {
         this.symbol = "♛";
         this.type = "default";
     }
+
+    // Gets the starting balance of the account
+    public BigDecimal getStartingBalance() {
+        return BigDecimal.valueOf(this.startingBalance);
+    }
+
 }

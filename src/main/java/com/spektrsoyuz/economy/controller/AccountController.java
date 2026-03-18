@@ -113,7 +113,7 @@ public final class AccountController {
      * @return The newly created {@link Account}.
      */
     public Account createAccount(final UUID id, final String name) {
-        final BigDecimal balance = BigDecimal.valueOf(this.plugin.getConfigController().getCurrencyConfig().getStartingBalance());
+        final BigDecimal balance = this.plugin.getConfigController().getCurrencyConfig().getStartingBalance();
         final Account account = Account.builder()
                 .plugin(this.plugin)
                 .id(id)

@@ -26,4 +26,5 @@ public final class StorageConfig {
         this.username = "";
         this.password = "";
     }
+
 }

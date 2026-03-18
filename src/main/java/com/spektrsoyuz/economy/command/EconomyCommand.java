@@ -31,7 +31,11 @@ public final class EconomyCommand {
 
     private final EconomyPlugin plugin;
 
-    // Registers the command
+    /**
+     * Registers the command.
+     *
+     * @param registrar The command registrar.
+     */
     public void register(final Commands registrar) {
         // /economy add <name> <amount>
         final var add = Commands.literal("add")

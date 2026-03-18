@@ -2,9 +2,12 @@ package com.spektrsoyuz.economy.listener;
 
 import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
+import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.model.account.Transactor;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
+import com.spektrsoyuz.economy.model.config.OptionsConfig;
 import lombok.RequiredArgsConstructor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -124,8 +127,50 @@ public class PlayerListener implements Listener {
         final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
         if (!currencyConfig.getType().equals("exp")) return;
 
+        final Player player = event.getPlayer();
         event.setDroppedExp(0);
         event.setKeepLevel(true);
+
+        this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
+            final OptionsConfig optionsConfig = this.plugin.getConfigController().getOptionsConfig();
+
+            // Subtract from player balance on death
+            if (optionsConfig.isLoseBalanceOnDeath()) {
+                final BigDecimal amount = optionsConfig.getLoseBalanceOnDeathAmount();
+                final String currency = EconomyUtils.format(this.plugin, amount);
+                account.subtractBalance(amount, Transactor.SERVER);
+
+                final Player killer = event.getEntity().getKiller();
+                if (killer != null) {
+                    // Add to killer balance
+                    this.plugin.getAccountController().getPlayerAccount(killer).ifPresent(killerAccount -> {
+                        killerAccount.addBalance(amount, Transactor.SERVER);
+
+                        killer.sendMessage(this.plugin.getConfigController().getMessage(
+                                "economy-death-killer",
+                                this.plugin.getMiniMessage(),
+                                Placeholder.parsed("player", player.getName()),
+                                Placeholder.parsed("currency", currency)
+                        ));
+                    });
+
+                    // Send killed message to player
+                    player.sendMessage(this.plugin.getConfigController().getMessage(
+                            "economy-death-killed",
+                            this.plugin.getMiniMessage(),
+                            Placeholder.parsed("killer", killer.getName()),
+                            Placeholder.parsed("currency", currency)
+                    ));
+                } else {
+                    // Send death message to player
+                    player.sendMessage(this.plugin.getConfigController().getMessage(
+                            "economy-death",
+                            this.plugin.getMiniMessage(),
+                            Placeholder.parsed("currency", currency)
+                    ));
+                }
+            }
+        });
     }
 
     @EventHandler

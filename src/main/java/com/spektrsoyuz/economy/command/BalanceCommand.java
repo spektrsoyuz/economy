@@ -26,7 +26,11 @@ public final class BalanceCommand {
 
     private final EconomyPlugin plugin;
 
-    // Registers the command
+    /**
+     * Registers the command.
+     *
+     * @param registrar The command registrar.
+     */
     public void register(final Commands registrar) {
         final var command = Commands.literal("balance")
                 .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_BALANCE))
