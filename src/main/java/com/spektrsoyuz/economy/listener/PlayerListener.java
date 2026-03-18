@@ -237,14 +237,8 @@ public class PlayerListener implements Listener {
         if (!event.getAction().isRightClick()) return;
         if (!event.getPlayer().isSneaking()) return;
 
-        // Handle experience currency type
-        if (config.getType() == CurrencyType.EXP) {
-            this.processItemExchange(event, item, config, 1);
-            return;
-        }
-
         // Handle item currency type
-        if (config.getType() == CurrencyType.ITEM) {
+        if (config.getType() == CurrencyType.ITEM || config.getType() == CurrencyType.EXP) {
             final int valuePerItem = config.getItemValue(item.getType());
             if (valuePerItem > 0) {
                 this.processItemExchange(event, item, config, valuePerItem);
