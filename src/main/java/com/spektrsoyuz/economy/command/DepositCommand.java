@@ -12,7 +12,6 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -21,7 +20,6 @@ import org.bukkit.inventory.ItemStack;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Model class for the /deposit command.
@@ -56,7 +54,10 @@ public final class DepositCommand {
 
         // Check if sender is a player
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(this.plugin.getConfigController().getMessage("error-sender-not-player", this.plugin.getMiniMessage()));
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-sender-not-player",
+                    this.plugin.getMiniMessage()
+            ));
             return 0;
         }
 
@@ -75,7 +76,11 @@ public final class DepositCommand {
 
         // Check if player has enough items to deposit
         if (totalValueInInventory <= 0) {
-            player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-balance", this.plugin.getMiniMessage()));
+            player.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-not-enough-balance",
+                    this.plugin.getMiniMessage(),
+                    Placeholder.parsed("currency", config.getNamePlural())
+            ));
 
             EconomyUtils.playErrorSound(player);
             return 0;
@@ -91,7 +96,10 @@ public final class DepositCommand {
 
         // Check if sender is a player
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(this.plugin.getConfigController().getMessage("error-sender-not-player", this.plugin.getMiniMessage()));
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-sender-not-player",
+                    this.plugin.getMiniMessage()
+            ));
             return 0;
         }
 
@@ -103,13 +111,13 @@ public final class DepositCommand {
     }
 
     // Handles the deposit transaction
-    private int handleTransaction(final Player player, final int amount, final CurrencyConfig currencyConfig) {
+    private int handleTransaction(final Player player, final int amount, final CurrencyConfig config) {
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
             // Calculate total value available in inventory
             long totalValueInInventory = 0;
             for (final ItemStack item : player.getInventory().getContents()) {
                 if (item == null || item.getType().isAir()) continue;
-                int value = currencyConfig.getItemValue(item.getType());
+                int value = config.getItemValue(item.getType());
 
                 if (value > 0) {
                     totalValueInInventory += (long) value * item.getAmount();
@@ -120,7 +128,8 @@ public final class DepositCommand {
             if (totalValueInInventory < amount) {
                 player.sendMessage(this.plugin.getConfigController().getMessage(
                         "error-not-enough-balance",
-                        this.plugin.getMiniMessage()
+                        this.plugin.getMiniMessage(),
+                        Placeholder.parsed("currency", config.getNamePlural())
                 ));
 
                 EconomyUtils.playErrorSound(player);
@@ -134,7 +143,7 @@ public final class DepositCommand {
             for (int i = 0; i < player.getInventory().getSize(); i++) {
                 final ItemStack item = player.getInventory().getItem(i);
                 if (item == null) continue;
-                int val = currencyConfig.getItemValue(item.getType());
+                int val = config.getItemValue(item.getType());
 
                 if (val > 0) {
                     currencySlots.add(new SlotValue(i, val));
@@ -170,7 +179,7 @@ public final class DepositCommand {
 
                     // Provide change if the item value was greater than the remaining debt
                     if (changeDue > 0) {
-                        this.refundValue(player, currencyConfig, changeDue);
+                        EconomyUtils.distributeItems(player, config, amount);
                     }
                 }
             }
@@ -182,7 +191,8 @@ public final class DepositCommand {
             // Check if transaction failed
             if (!success) {
                 // Refund items to play
-                this.refundValue(player, currencyConfig, amount);
+                EconomyUtils.distributeItems(player, config, amount);
+
                 player.sendMessage(this.plugin.getConfigController().getMessage(
                         "error-transaction-failed",
                         this.plugin.getMiniMessage()
@@ -194,7 +204,7 @@ public final class DepositCommand {
 
             // Send message to player
             final String currencyFormatted = EconomyUtils.format(this.plugin, amountDecimal);
-            final String messageKey = String.format("economy-%s-deposit", currencyConfig.getType().name().toLowerCase());
+            final String messageKey = String.format("economy-%s-deposit", config.getType().name().toLowerCase());
 
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     messageKey,
@@ -213,37 +223,6 @@ public final class DepositCommand {
         });
 
         return Command.SINGLE_SUCCESS;
-    }
-
-    // Refunds items to the player if the transaction fails
-    private void refundValue(final Player player, final CurrencyConfig config, final int totalValue) {
-        int remainingToRefund = totalValue;
-
-        // Get currency items sorted by value descending
-        final List<Map.Entry<String, Integer>> sortedItems = new ArrayList<>(config.getItems().entrySet());
-        sortedItems.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
-
-        for (final Map.Entry<String, Integer> entry : sortedItems) {
-            if (remainingToRefund <= 0) break;
-
-            final Material material = Material.matchMaterial(entry.getKey());
-            if (material == null) continue;
-
-            final int itemValue = entry.getValue();
-            final int countToGive = remainingToRefund / itemValue;
-
-            if (countToGive > 0) {
-                final ItemStack stack = new ItemStack(material, countToGive);
-
-                // Give items to player
-                player.getInventory().addItem(stack).values().forEach(leftover -> {
-                    // Drop remaining items
-                    player.getWorld().dropItem(player.getLocation(), leftover);
-                });
-
-                remainingToRefund %= itemValue;
-            }
-        }
     }
 
     // Model record for the value of an inventory slot

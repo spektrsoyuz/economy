@@ -12,16 +12,12 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Model class for the /withdraw command.
@@ -101,7 +97,7 @@ public final class WithdrawCommand {
     }
 
     // Handles the withdrawal transaction
-    private int handleTransaction(final Player player, final int amount, final CurrencyConfig currencyConfig) {
+    private int handleTransaction(final Player player, final int amount, final CurrencyConfig config) {
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
             final BigDecimal amountDecimal = BigDecimal.valueOf(amount);
 
@@ -112,7 +108,7 @@ public final class WithdrawCommand {
             }
 
             // Check inventory space (value-based)
-            if (this.calculateAvailableSpace(player, currencyConfig) < amount) {
+            if (this.calculateAvailableSpace(player, config) < amount) {
                 player.sendMessage(this.plugin.getConfigController().getMessage("error-not-enough-inventory-space", this.plugin.getMiniMessage()));
                 return;
             }
@@ -127,11 +123,11 @@ public final class WithdrawCommand {
             }
 
             // Handle item distribution
-            this.distributeItems(player, currencyConfig, amount);
+            EconomyUtils.distributeItems(player, config, amount);
 
             // Send message to player
             final String currencyFormatted = EconomyUtils.format(this.plugin, amountDecimal);
-            final String messageKey = String.format("economy-%s-withdraw", currencyConfig.getType().name().toLowerCase());
+            final String messageKey = String.format("economy-%s-withdraw", config.getType().name().toLowerCase());
 
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     messageKey,
@@ -150,37 +146,6 @@ public final class WithdrawCommand {
         });
 
         return Command.SINGLE_SUCCESS;
-    }
-
-    // Distributes physical items to the player based on value
-    private void distributeItems(final Player player, final CurrencyConfig config, final int totalValue) {
-        int remainingToGive = totalValue;
-
-        // Get currency items sorted by value descending
-        final List<Map.Entry<String, Integer>> sortedItems = new ArrayList<>(config.getItems().entrySet());
-        sortedItems.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
-
-        for (final Map.Entry<String, Integer> entry : sortedItems) {
-            if (remainingToGive <= 0) break;
-
-            final Material material = Material.matchMaterial(entry.getKey());
-            if (material == null) continue;
-
-            final int itemValue = entry.getValue();
-            final int countToGive = remainingToGive / itemValue;
-
-            if (countToGive > 0) {
-                final ItemStack stack = new ItemStack(material, countToGive);
-
-                // Give items to player
-                player.getInventory().addItem(stack).values().forEach(leftover -> {
-                    // Drop remaining items
-                    player.getWorld().dropItem(player.getLocation(), leftover);
-                });
-
-                remainingToGive %= itemValue;
-            }
-        }
     }
 
     // Calculates how much total currency value the player can fit in their inventory
