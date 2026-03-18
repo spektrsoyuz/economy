@@ -203,6 +203,16 @@ public final class EconomyController {
                 player.getInventory().addItem(stack);
             }
 
+            // Disable auto-deposit if applicable
+            if (account.isAutoDeposit()) {
+                account.setAutoDeposit(false);
+
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "command-deposit-auto-disable",
+                        this.plugin.getMiniMessage()
+                ));
+            }
+
             // Send message to player
             final String currencyFormatted = EconomyUtils.format(this.plugin, amountToSubtract);
             final String messageKey = String.format("economy-%s-withdraw", config.getType().name().toLowerCase());
