@@ -1,5 +1,6 @@
 package com.spektrsoyuz.economy.command;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.spektrsoyuz.economy.Constants;
@@ -34,6 +35,9 @@ public final class DepositCommand {
                 .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_DEPOSIT))
                 .then(Commands.literal("all")
                         .executes(this::executeAll))
+                .then(Commands.literal("auto")
+                        .requires(s -> s.getSender().hasPermission(Constants.PERMISSION_COMMAND_DEPOSIT_AUTO))
+                        .executes(this::executeAuto))
                 .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                         .executes(this::execute))
                 .build();
@@ -81,6 +85,44 @@ public final class DepositCommand {
 
         // Process transaction
         return this.plugin.getEconomyController().handleDeposit(player, totalValueInInventory, config);
+    }
+
+    // Executes the command with the 'auto' argument
+    private int executeAuto(final CommandContext<CommandSourceStack> ctx) {
+        final CommandSender sender = ctx.getSource().getSender();
+
+        // Check if sender is a player
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-sender-not-player",
+                    this.plugin.getMiniMessage()
+            ));
+            return 0;
+        }
+
+        this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
+            // Account found
+            final boolean auto = account.isAutoDeposit();
+
+            account.setAutoDeposit(!auto);
+
+            final String messageKey = auto
+                    ? "command-deposit-auto-disable"
+                    : "command-deposit-auto-enable";
+
+            player.sendMessage(this.plugin.getConfigController().getMessage(
+                    messageKey,
+                    this.plugin.getMiniMessage()
+            ));
+        }, () -> {
+            // No account found
+            player.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
+
+        return Command.SINGLE_SUCCESS;
     }
 
     // Executes the command

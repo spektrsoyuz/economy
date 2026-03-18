@@ -18,9 +18,10 @@ public final class Constants {
 
     // Command permissions
     public static final String PERMISSION_ADMIN = "economy.admin";
-    public static final String PERMISSION_COMMAND_BALANCE = "economy.balance";
     public static final String PERMISSION_COMMAND_BALANCE_ALL = "economy.balance.all";
     public static final String PERMISSION_COMMAND_BALANCE_OTHER = "economy.balance.other";
+    public static final String PERMISSION_COMMAND_BALANCE = "economy.balance";
+    public static final String PERMISSION_COMMAND_DEPOSIT_AUTO = "economy.deposit.auto";
     public static final String PERMISSION_COMMAND_DEPOSIT = "economy.deposit";
     public static final String PERMISSION_COMMAND_PAY = "economy.pay";
     public static final String PERMISSION_COMMAND_WITHDRAW = "economy.withdraw";

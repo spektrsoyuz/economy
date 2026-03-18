@@ -27,7 +27,8 @@ public interface EconomyDao {
                 timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 name TEXT NOT NULL,
                 balance DECIMAL(10,2) NOT NULL,
-                frozen BOOLEAN NOT NULL
+                frozen BOOLEAN NOT NULL,
+                auto_deposit BOOLEAN NOT NULL
             )""")
     void createAccountsTable();
 
@@ -51,9 +52,9 @@ public interface EconomyDao {
      * @param account The account state to persist.
      */
     @SqlUpdate("""
-            INSERT INTO economy_accounts (id, name, balance, frozen)
-            VALUES (:id, :name, :balance, :frozen)
-            ON DUPLICATE KEY UPDATE name = :name, balance = :balance, frozen = :frozen
+            INSERT INTO economy_accounts (id, name, balance, frozen, auto_deposit)
+            VALUES (:id, :name, :balance, :frozen, :autoDeposit)
+            ON DUPLICATE KEY UPDATE name = :name, balance = :balance, frozen = :frozen, auto_deposit = :autoDeposit
             """)
     void saveAccount(@BindMethods Account.Memento account);
 

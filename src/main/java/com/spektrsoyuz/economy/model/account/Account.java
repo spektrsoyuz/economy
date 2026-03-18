@@ -22,15 +22,17 @@ public final class Account {
     private BigDecimal balance;
     private String name;
     private boolean frozen;
+    private boolean autoDeposit;
 
     /**
      * Constructs a new Account and initializes the update consumers.
      *
-     * @param plugin  The economy plugin instance.
-     * @param id      The unique identifier for the account.
-     * @param name    The internal name of the account.
-     * @param balance The starting balance.
-     * @param frozen  The frozen status (defaults to false if null).
+     * @param plugin      The economy plugin instance.
+     * @param id          The unique identifier for the account.
+     * @param name        The internal name of the account.
+     * @param balance     The starting balance.
+     * @param frozen      The frozen status (defaults to false if null).
+     * @param autoDeposit The auto deposit status (defaults to false if null).
      */
     @Builder
     public Account(
@@ -38,12 +40,14 @@ public final class Account {
             final UUID id,
             final String name,
             final BigDecimal balance,
-            final Boolean frozen
+            final Boolean frozen,
+            final Boolean autoDeposit
     ) {
         this.id = id;
         this.name = name;
         this.balance = balance;
         this.frozen = frozen != null && frozen;
+        this.autoDeposit = autoDeposit != null && autoDeposit;
 
         this.accountConsumer = plugin.getAccountQueueTask()::queue;
         this.transactionConsumer = plugin.getTransactionQueueTask()::queue;
@@ -169,6 +173,17 @@ public final class Account {
     }
 
     /**
+     * Sets the auto deposit status of the account
+     *
+     * @param autoDeposit The new auto deposit state.
+     */
+    public void setAutoDeposit(final boolean autoDeposit) {
+        this.autoDeposit = autoDeposit;
+
+        this.saveAccount();
+    }
+
+    /**
      * Queues the current account state for persistence.
      */
     private void saveAccount() {
@@ -196,7 +211,8 @@ public final class Account {
                 this.id,
                 this.name,
                 this.balance,
-                this.frozen
+                this.frozen,
+                this.autoDeposit
         );
     }
 
@@ -208,7 +224,8 @@ public final class Account {
             UUID id,
             String name,
             BigDecimal balance,
-            boolean frozen
+            boolean frozen,
+            boolean autoDeposit
     ) {
         public Account toAccount(final EconomyPlugin plugin) {
             return new Account(
@@ -216,7 +233,8 @@ public final class Account {
                     id,
                     name,
                     balance,
-                    frozen
+                    frozen,
+                    autoDeposit
             );
         }
     }
