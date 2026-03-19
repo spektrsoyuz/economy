@@ -1,6 +1,5 @@
 package com.spektrsoyuz.economy.listener;
 
-import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.CurrencyType;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
@@ -26,11 +25,11 @@ public final class EntityListener implements Listener {
 
     @EventHandler
     public void onExpBottleBreak(final ExpBottleEvent event) {
-        final CurrencyConfig currencyConfig = this.plugin.getConfigController().getCurrencyConfig();
-        if (!(currencyConfig.getType() == CurrencyType.EXP)) return;
+        final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
+        if (!(config.getType() == CurrencyType.EXP)) return;
 
         // Set experience drop to fixed value
-        event.setExperience(Constants.LEVEL_COST);
+        event.setExperience(config.getExp().getCost());
     }
 
 }

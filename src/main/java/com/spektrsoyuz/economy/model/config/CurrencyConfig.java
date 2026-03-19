@@ -2,6 +2,7 @@ package com.spektrsoyuz.economy.model.config;
 
 import com.spektrsoyuz.economy.model.CurrencyType;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.Material;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
@@ -24,6 +25,7 @@ public final class CurrencyConfig {
     private final String symbol;
     private final String type;
     private final Map<String, Integer> items;
+    private final ExpConfig exp;
 
     // Constructor
     public CurrencyConfig() {
@@ -34,6 +36,15 @@ public final class CurrencyConfig {
         this.symbol = "";
         this.type = "default";
         this.items = Map.of("minecraft:gold_ingot", 1, "minecraft:gold_block", 9);
+        this.exp = new ExpConfig(32, 5000);
+    }
+
+    @Getter
+    @ConfigSerializable
+    @RequiredArgsConstructor
+    public static class ExpConfig {
+        private final int cost;
+        private final int cooldown;
     }
 
     // Gets the starting balance for new accounts

@@ -1,6 +1,5 @@
 package com.spektrsoyuz.economy.listener;
 
-import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
 import com.spektrsoyuz.economy.model.CurrencyType;
@@ -106,7 +105,7 @@ public final class PlayerListener implements Listener {
 
         this.plugin.getAccountController().getPlayerAccount(player).ifPresent(account -> {
             // Convert raw XP points to a fraction of a level
-            final double levelGain = (double) amount / Constants.LEVEL_COST;
+            final double levelGain = (double) amount / config.getExp().getCost();
             final boolean success = account.addBalance(BigDecimal.valueOf(levelGain), Transactor.SERVER);
 
             if (!success) {

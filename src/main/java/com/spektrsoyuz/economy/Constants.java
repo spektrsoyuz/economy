@@ -9,9 +9,6 @@ public final class Constants {
 
     public static final String PLUGIN_NAME = "economy";
 
-    public static final int LEVEL_COST = 32;
-    public static final int LEVEL_SOUND_COOLDOWN = 5000;
-
     // Config paths
     public static final String CONFIG_PRIMARY = "config.conf";
     public static final String CONFIG_MESSAGES = "messages.conf";

@@ -1,8 +1,8 @@
 package com.spektrsoyuz.economy.controller;
 
-import com.spektrsoyuz.economy.Constants;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.model.account.Account;
+import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.Sound;
@@ -208,6 +208,7 @@ public final class AccountController {
      */
     public void updateExp(final Player player) {
         this.getPlayerAccount(player).ifPresent(account -> {
+            final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
             final double balance = account.getBalance().doubleValue();
             final int newLevel = (int) balance;
             final float progress = (float) (balance - newLevel);
@@ -217,7 +218,7 @@ public final class AccountController {
                 final long currentTime = System.currentTimeMillis();
                 final long lastPlayed = soundCooldowns.getOrDefault(player.getUniqueId(), 0L);
 
-                if (currentTime - lastPlayed >= Constants.LEVEL_SOUND_COOLDOWN) {
+                if (currentTime - lastPlayed >= config.getExp().getCooldown()) {
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                     soundCooldowns.put(player.getUniqueId(), currentTime);
                 }
