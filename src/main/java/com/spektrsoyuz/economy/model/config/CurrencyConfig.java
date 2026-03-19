@@ -34,7 +34,7 @@ public final class CurrencyConfig {
         this.startingBalance = 0.0;
         this.symbol = "";
         this.type = "default";
-        this.items = Map.of("minecraft:gold_ingot", 1, "minecraft:gold_block", 9);
+        this.items = Map.of("gold_ingot", 1, "gold_block", 9);
         this.exp = new ExpConfig();
     }
 
