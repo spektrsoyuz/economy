@@ -46,8 +46,8 @@ public final class CurrencyConfig {
 
         // Constructor
         public ExpConfig() {
-            this.cost = 0;
-            this.cooldown = 0;
+            this.cost = 64;
+            this.cooldown = 5000;
         }
     }
 
