@@ -171,6 +171,7 @@ public final class PlayerListener implements Listener {
                 final BigDecimal amount = optionsConfig.getLoseBalanceOnDeathAmount();
                 final String currency = EconomyUtils.format(this.plugin, amount);
 
+                if (account.getBalance().compareTo(amount) < 0) return;
                 final boolean accountSuccess = account.subtractBalance(amount, Transactor.SERVER);
 
                 if (!accountSuccess) {
