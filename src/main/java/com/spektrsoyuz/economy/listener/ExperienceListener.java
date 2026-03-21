@@ -128,11 +128,16 @@ public final class ExperienceListener implements Listener {
 
             // Subtract from player balance on death
             if (optionsConfig.isLoseBalanceOnDeath()) {
-                final BigDecimal amount = optionsConfig.getLoseBalanceOnDeathAmount();
-                final String currency = EconomyUtils.format(this.plugin, amount);
+                final BigDecimal configuredAmount = optionsConfig.getLoseBalanceOnDeathAmount();
 
-                if (account.getBalance().compareTo(amount) < 0) return;
-                final boolean accountSuccess = account.subtractBalance(amount, Transactor.SERVER);
+                // Get the actual amount to take
+                final BigDecimal amountToLose = account.getBalance().min(configuredAmount);
+
+                // Check if the account has 0 or less
+                if (amountToLose.compareTo(BigDecimal.ZERO) <= 0) return;
+
+                final String currency = EconomyUtils.format(this.plugin, amountToLose);
+                final boolean accountSuccess = account.subtractBalance(amountToLose, Transactor.SERVER);
 
                 if (!accountSuccess) {
                     // Transaction failed
@@ -149,7 +154,7 @@ public final class ExperienceListener implements Listener {
                 if (killer != null) {
                     // Add to killer balance
                     this.plugin.getAccountController().getPlayerAccount(killer).ifPresent(killerAccount -> {
-                        final boolean killerSuccess = killerAccount.addBalance(amount, Transactor.SERVER);
+                        final boolean killerSuccess = killerAccount.addBalance(amountToLose, Transactor.SERVER);
 
                         if (!killerSuccess) {
                             // Transaction failed
