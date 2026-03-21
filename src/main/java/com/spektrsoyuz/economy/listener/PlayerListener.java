@@ -12,6 +12,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -90,8 +91,13 @@ public final class PlayerListener implements Listener {
         });
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onExpChange(final PlayerExpChangeEvent event) {
+        // Check if event has already been processed
+        if (event.getAmount() == 0) {
+            return;
+        }
+
         final CurrencyConfig config = this.plugin.getConfigController().getCurrencyConfig();
         if (!(config.getType() == CurrencyType.EXP)) return;
 
