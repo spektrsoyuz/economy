@@ -3,6 +3,7 @@ package com.spektrsoyuz.economy.controller;
 import com.mojang.brigadier.Command;
 import com.spektrsoyuz.economy.EconomyPlugin;
 import com.spektrsoyuz.economy.EconomyUtils;
+import com.spektrsoyuz.economy.model.account.Account;
 import com.spektrsoyuz.economy.model.account.Transactor;
 import com.spektrsoyuz.economy.model.config.CurrencyConfig;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +15,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Controller class for economy transactions.
@@ -27,6 +26,9 @@ import java.util.Map;
 public final class EconomyController {
 
     private final EconomyPlugin plugin;
+
+    private final Map<UUID, BigDecimal> sessionTotals = new HashMap<>();
+    private final Map<UUID, Integer> resetTasks = new HashMap<>();
 
     // Handles a deposit transaction
     public int handleDeposit(final Player player, final int amount, final CurrencyConfig config) {
@@ -390,6 +392,62 @@ public final class EconomyController {
 
     // Model record for the value of an inventory slot
     private record SlotValue(int slot, int valuePerItem) {
+    }
+
+    // Handles a standard transaction failure
+    public void handleTransactionFailure(final Player player) {
+        player.sendMessage(this.plugin.getConfigController().getMessage(
+                "error-transaction-failed",
+                this.plugin.getMiniMessage()
+        ));
+        EconomyUtils.playErrorSound(player);
+    }
+
+    // Deposits an item's value into a player's account and updates their action bar
+    public void depositItem(
+            final Player player,
+            final Account account,
+            final ItemStack item,
+            final int valuePerItem
+    ) {
+        final int count = item.getAmount();
+        final BigDecimal totalValue = BigDecimal.valueOf((long) count * valuePerItem);
+
+        final boolean success = account.addBalance(totalValue, Transactor.SERVER);
+
+        if (!success) {
+            this.handleTransactionFailure(player);
+            return;
+        }
+
+        final UUID uuid = player.getUniqueId();
+
+        // Update the running total for this session
+        BigDecimal currentSessionTotal = this.sessionTotals.getOrDefault(uuid, BigDecimal.ZERO);
+        currentSessionTotal = currentSessionTotal.add(totalValue);
+        this.sessionTotals.put(uuid, currentSessionTotal);
+
+        // Cancel any existing reset task
+        if (this.resetTasks.containsKey(uuid)) {
+            this.plugin.getServer().getScheduler().cancelTask(this.resetTasks.get(uuid));
+        }
+
+        // Send the action bar to the player
+        player.sendActionBar(this.plugin.getConfigController().getMessage(
+                "command-deposit-auto",
+                this.plugin.getMiniMessage(),
+                Placeholder.parsed("currency", EconomyUtils.format(this.plugin, currentSessionTotal))
+        ));
+
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.5f);
+
+        // Schedule the session reset
+        final int taskId = this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+            this.sessionTotals.remove(uuid);
+            this.resetTasks.remove(uuid);
+        }, 30L).getTaskId();
+
+        this.resetTasks.put(uuid, taskId);
     }
 
 }
