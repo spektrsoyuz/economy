@@ -21,6 +21,7 @@ public final class Constants {
     public static final String PERMISSION_COMMAND_DEPOSIT_AUTO = "economy.deposit.auto";
     public static final String PERMISSION_COMMAND_DEPOSIT = "economy.deposit";
     public static final String PERMISSION_COMMAND_PAY = "economy.pay";
+    public static final String PERMISSION_COMMAND_WITHDRAW_AUTO = "economy.withdraw.auto";
     public static final String PERMISSION_COMMAND_WITHDRAW = "economy.withdraw";
 
 }

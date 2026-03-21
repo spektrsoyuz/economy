@@ -12,6 +12,7 @@ import com.spektrsoyuz.economy.model.vault.EconomyImpl;
 import com.spektrsoyuz.economy.model.vault.LegacyEconomyImpl;
 import com.spektrsoyuz.economy.task.AccountQueueTask;
 import com.spektrsoyuz.economy.task.AccountSyncTask;
+import com.spektrsoyuz.economy.task.AutoWithdrawTask;
 import com.spektrsoyuz.economy.task.TransactionQueueTask;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -38,6 +39,7 @@ public final class EconomyPlugin extends JavaPlugin {
 
     private final AccountQueueTask accountQueueTask = new AccountQueueTask(this);
     private final TransactionQueueTask transactionQueueTask = new TransactionQueueTask(this);
+    private final AutoWithdrawTask autoWithdrawTask = new AutoWithdrawTask(this);
     private final AccountSyncTask accountSyncTask = new AccountSyncTask(this);
 
     private MiniMessage miniMessage;
@@ -116,14 +118,21 @@ public final class EconomyPlugin extends JavaPlugin {
         );
         asyncScheduler.runAtFixedRate(
                 this,
-                scheduledTask -> this.transactionQueueTask.run(),
+                scheduledTask -> this.accountSyncTask.run(),
                 1,
                 30,
                 TimeUnit.SECONDS
         );
         asyncScheduler.runAtFixedRate(
                 this,
-                scheduledTask -> this.accountSyncTask.run(),
+                scheduledTask -> this.autoWithdrawTask.run(),
+                1,
+                1,
+                TimeUnit.SECONDS
+        );
+        asyncScheduler.runAtFixedRate(
+                this,
+                scheduledTask -> this.transactionQueueTask.run(),
                 1,
                 30,
                 TimeUnit.SECONDS

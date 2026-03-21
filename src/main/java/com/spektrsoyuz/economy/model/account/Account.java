@@ -23,16 +23,18 @@ public final class Account {
     private String name;
     private boolean frozen;
     private boolean autoDeposit;
+    private boolean autoWithdraw;
 
     /**
      * Constructs a new Account and initializes the update consumers.
      *
-     * @param plugin      The economy plugin instance.
-     * @param id          The unique identifier for the account.
-     * @param name        The internal name of the account.
-     * @param balance     The starting balance.
-     * @param frozen      The frozen status (defaults to false if null).
-     * @param autoDeposit The auto deposit status (defaults to false if null).
+     * @param plugin       The economy plugin instance.
+     * @param id           The unique identifier for the account.
+     * @param name         The internal name of the account.
+     * @param balance      The starting balance.
+     * @param frozen       The frozen status (defaults to false if null).
+     * @param autoDeposit  The auto deposit status (defaults to false if null).
+     * @param autoWithdraw The auto withdraw status (defaults to false if null).
      */
     @Builder
     public Account(
@@ -41,18 +43,18 @@ public final class Account {
             final String name,
             final BigDecimal balance,
             final Boolean frozen,
-            final Boolean autoDeposit
+            final Boolean autoDeposit,
+            final Boolean autoWithdraw
     ) {
         this.id = id;
         this.name = name;
         this.balance = balance;
         this.frozen = frozen != null && frozen;
         this.autoDeposit = autoDeposit != null && autoDeposit;
+        this.autoWithdraw = autoWithdraw != null && autoWithdraw;
 
         this.accountConsumer = plugin.getAccountQueueTask()::queue;
         this.transactionConsumer = plugin.getTransactionQueueTask()::queue;
-
-        this.saveAccount();
     }
 
     /**
@@ -184,6 +186,17 @@ public final class Account {
     }
 
     /**
+     * Sets the auto withdraw status of the account
+     *
+     * @param autoWithdraw The new auto withdraw state.
+     */
+    public void setAutoWithdraw(final boolean autoWithdraw) {
+        this.autoWithdraw = autoWithdraw;
+
+        this.saveAccount();
+    }
+
+    /**
      * Queues the current account state for persistence.
      */
     private void saveAccount() {
@@ -212,7 +225,8 @@ public final class Account {
                 this.name,
                 this.balance,
                 this.frozen,
-                this.autoDeposit
+                this.autoDeposit,
+                this.autoWithdraw
         );
     }
 
@@ -225,7 +239,8 @@ public final class Account {
             String name,
             BigDecimal balance,
             boolean frozen,
-            boolean autoDeposit
+            boolean autoDeposit,
+            boolean autoWithdraw
     ) {
         public Account toAccount(final EconomyPlugin plugin) {
             return new Account(
@@ -234,7 +249,8 @@ public final class Account {
                     name,
                     balance,
                     frozen,
-                    autoDeposit
+                    autoDeposit,
+                    autoWithdraw
             );
         }
     }

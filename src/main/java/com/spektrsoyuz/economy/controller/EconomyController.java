@@ -303,7 +303,7 @@ public final class EconomyController {
     }
 
     // Gets a list of stacks sorted by value
-    private List<Map.Entry<String, Integer>> getSortedStacks(final CurrencyConfig config) {
+    public List<Map.Entry<String, Integer>> getSortedStacks(final CurrencyConfig config) {
         final List<Map.Entry<String, Integer>> sortedItems = new ArrayList<>(config.getItems().entrySet());
 
         sortedItems.sort((a, b) -> {

@@ -9,21 +9,27 @@ import java.lang.reflect.Type;
 import java.util.Optional;
 import java.util.UUID;
 
-public class EconomyArgumentFactory implements ArgumentFactory {
+/**
+ * Argument factory for economy data.
+ *
+ * @since 1.0.0
+ */
+public final class EconomyArgumentFactory implements ArgumentFactory {
 
     @Override
-    public Optional<Argument> build(Type type, Object value, ConfigRegistry config) {
+    public Optional<Argument> build(final Type type, final Object value, final ConfigRegistry config) {
+        // Null values
         if (value == null) {
             return Optional.empty();
         }
 
-        // Handle UUIDs
+        // UUID
         if (type == UUID.class) {
             return Optional.of((position, statement, ctx) ->
                     statement.setString(position, value.toString()));
         }
 
-        // Handle your custom Transactor class/enum
+        // Transactor
         if (type == Transactor.class) {
             return Optional.of((position, statement, ctx) ->
                     statement.setString(position, value.toString()));
@@ -31,4 +37,5 @@ public class EconomyArgumentFactory implements ArgumentFactory {
 
         return Optional.empty();
     }
+
 }

@@ -24,7 +24,7 @@ import java.util.Optional;
  */
 @RequiredArgsConstructor
 @SuppressWarnings("deprecation")
-public class LegacyEconomyImpl implements Economy {
+public final class LegacyEconomyImpl implements Economy {
 
     private final EconomyPlugin plugin;
 

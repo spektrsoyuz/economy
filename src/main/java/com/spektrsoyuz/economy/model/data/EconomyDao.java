@@ -28,7 +28,8 @@ public interface EconomyDao {
                 name TEXT NOT NULL,
                 balance DECIMAL(10,2) NOT NULL,
                 frozen BOOLEAN NOT NULL,
-                auto_deposit BOOLEAN NOT NULL
+                auto_deposit BOOLEAN NOT NULL,
+                auto_withdraw BOOLEAN NOT NULL
             )""")
     void createAccountsTable();
 
@@ -52,9 +53,9 @@ public interface EconomyDao {
      * @param account The account state to persist.
      */
     @SqlUpdate("""
-            INSERT INTO economy_accounts (id, name, balance, frozen, auto_deposit)
-            VALUES (:id, :name, :balance, :frozen, :autoDeposit)
-            ON DUPLICATE KEY UPDATE name = :name, balance = :balance, frozen = :frozen, auto_deposit = :autoDeposit
+            INSERT INTO economy_accounts (id, name, balance, frozen, auto_deposit, auto_withdraw)
+            VALUES (:id, :name, :balance, :frozen, :autoDeposit, :autoWithdraw)
+            ON DUPLICATE KEY UPDATE name = :name, balance = :balance, frozen = :frozen, auto_deposit = :autoDeposit, auto_withdraw = :autoWithdraw
             """)
     void saveAccount(@BindMethods Account.Memento account);
 
@@ -100,7 +101,7 @@ public interface EconomyDao {
      * @param id The UUID string to search for.
      * @return An {@link Optional} containing the account memento if found.
      */
-    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit FROM economy_accounts WHERE id = :id")
+    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit, auto_withdraw FROM economy_accounts WHERE id = :id")
     @RegisterConstructorMapper(Account.Memento.class)
     Optional<Account.Memento> getAccountById(@Bind("id") String id);
 
@@ -110,7 +111,7 @@ public interface EconomyDao {
      * @param name The name to search for.
      * @return An {@link Optional} containing the account memento if found.
      */
-    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit FROM economy_accounts WHERE name = :name")
+    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit, auto_withdraw FROM economy_accounts WHERE name = :name")
     @RegisterConstructorMapper(Account.Memento.class)
     Optional<Account.Memento> getAccountByName(@Bind("name") String name);
 
@@ -119,7 +120,7 @@ public interface EconomyDao {
      *
      * @return A set containing all account mementos.
      */
-    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit FROM economy_accounts")
+    @SqlQuery("SELECT id, name, balance, frozen, auto_deposit, auto_withdraw FROM economy_accounts")
     @RegisterConstructorMapper(Account.Memento.class)
     Set<Account.Memento> getAccounts();
 
