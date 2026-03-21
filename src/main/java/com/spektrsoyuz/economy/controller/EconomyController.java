@@ -124,7 +124,7 @@ public final class EconomyController {
 
             // Send message to player
             final String currencyFormatted = EconomyUtils.format(this.plugin, amountDecimal);
-            final String messageKey = String.format("economy-%s-deposit", config.getType().name().toLowerCase());
+            final String messageKey = String.format("command-deposit-%s", config.getType().name().toLowerCase());
 
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     messageKey,
@@ -217,7 +217,7 @@ public final class EconomyController {
 
             // Send message to player
             final String currencyFormatted = EconomyUtils.format(this.plugin, amountToSubtract);
-            final String messageKey = String.format("economy-%s-withdraw", config.getType().name().toLowerCase());
+            final String messageKey = String.format("command-withdraw-%s", config.getType().name().toLowerCase());
 
             player.sendMessage(this.plugin.getConfigController().getMessage(
                     messageKey,
