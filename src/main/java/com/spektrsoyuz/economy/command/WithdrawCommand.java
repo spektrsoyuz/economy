@@ -102,6 +102,16 @@ public final class WithdrawCommand {
             // Account found
             final boolean auto = account.isAutoWithdraw();
 
+            if (!auto && account.isAutoDeposit()) {
+                // Disable auto deposit
+                account.setAutoDeposit(false);
+
+                player.sendMessage(this.plugin.getConfigController().getMessage(
+                        "command-deposit-auto-disable",
+                        this.plugin.getMiniMessage()
+                ));
+            }
+
             account.setAutoWithdraw(!auto);
 
             final String messageKey = auto
