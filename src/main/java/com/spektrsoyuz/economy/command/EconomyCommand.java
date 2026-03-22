@@ -131,10 +131,13 @@ public final class EconomyCommand {
                     Placeholder.parsed("symbol", symbol),
                     Placeholder.parsed("currency", currency)
             ));
-        }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage(
-                "error-account-not-found",
-                this.plugin.getMiniMessage()
-        )));
+        }, () -> {
+            // No account found
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
 
         return Command.SINGLE_SUCCESS;
     }
@@ -183,10 +186,13 @@ public final class EconomyCommand {
                     this.plugin.getMiniMessage(),
                     Placeholder.parsed("name", accountName)
             ));
-        }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage(
-                "error-account-not-found",
-                this.plugin.getMiniMessage()
-        )));
+        }, () -> {
+            // No account found
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
 
         return Command.SINGLE_SUCCESS;
     }
@@ -207,10 +213,13 @@ public final class EconomyCommand {
                     this.plugin.getMiniMessage(),
                     Placeholder.parsed("name", accountName)
             ));
-        }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage(
-                "error-account-not-found",
-                this.plugin.getMiniMessage()
-        )));
+        }, () -> {
+            // No account found
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
 
         return Command.SINGLE_SUCCESS;
     }
@@ -250,8 +259,9 @@ public final class EconomyCommand {
         // Check if account exists
         this.plugin.getAccountController().getAccount(accountName).ifPresentOrElse(account -> {
             // Reset the account
-            account.setBalance(BigDecimal.ZERO, Transactor.SERVER);
             account.setFrozen(false);
+
+            final boolean success = account.setBalance(BigDecimal.ZERO, Transactor.SERVER);
 
             // Send message to sender
             sender.sendMessage(this.plugin.getConfigController().getMessage(
@@ -259,10 +269,13 @@ public final class EconomyCommand {
                     this.plugin.getMiniMessage(),
                     Placeholder.parsed("name", accountName)
             ));
-        }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage(
-                "error-account-not-found",
-                this.plugin.getMiniMessage()
-        )));
+        }, () -> {
+            // No account found
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
 
         return Command.SINGLE_SUCCESS;
     }
@@ -290,10 +303,13 @@ public final class EconomyCommand {
                     Placeholder.parsed("symbol", symbol),
                     Placeholder.parsed("currency", currency)
             ));
-        }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage(
-                "error-account-not-found",
-                this.plugin.getMiniMessage()
-        )));
+        }, () -> {
+            // No account found
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
 
         return Command.SINGLE_SUCCESS;
     }
@@ -321,10 +337,13 @@ public final class EconomyCommand {
                     Placeholder.parsed("symbol", symbol),
                     Placeholder.parsed("currency", currency)
             ));
-        }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage(
-                "error-account-not-found",
-                this.plugin.getMiniMessage()
-        )));
+        }, () -> {
+            // No account found
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
 
         return Command.SINGLE_SUCCESS;
     }
@@ -345,10 +364,13 @@ public final class EconomyCommand {
                     this.plugin.getMiniMessage(),
                     Placeholder.parsed("name", accountName)
             ));
-        }, () -> sender.sendMessage(this.plugin.getConfigController().getMessage(
-                "error-account-not-found",
-                this.plugin.getMiniMessage()
-        )));
+        }, () -> {
+            // No account found
+            sender.sendMessage(this.plugin.getConfigController().getMessage(
+                    "error-account-not-found",
+                    this.plugin.getMiniMessage()
+            ));
+        });
 
         return Command.SINGLE_SUCCESS;
     }

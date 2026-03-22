@@ -59,7 +59,6 @@ public final class BalanceCommand {
 
         this.plugin.getAccountController().getAccount(player).ifPresentOrElse(account -> {
             // Account found for player
-            final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
             final String currency = EconomyUtils.format(this.plugin, account.getBalance());
 
             // Send message to player
@@ -67,7 +66,6 @@ public final class BalanceCommand {
                     "command-balance",
                     this.plugin.getMiniMessage(),
                     Placeholder.parsed("name", account.getDisplayName()),
-                    Placeholder.parsed("symbol", symbol),
                     Placeholder.parsed("currency", currency)
             ));
         }, () -> {
@@ -88,7 +86,6 @@ public final class BalanceCommand {
 
         this.plugin.getAccountController().getAccount(accountName).ifPresentOrElse(account -> {
             // Account found for player
-            final String symbol = this.plugin.getConfigController().getCurrencyConfig().getSymbol();
             final String currency = EconomyUtils.format(this.plugin, account.getBalance());
 
             final boolean isPlayer = this.plugin.getServer().getOfflinePlayer(account.getId()).hasPlayedBefore();
@@ -107,7 +104,6 @@ public final class BalanceCommand {
                     "command-balance-other",
                     this.plugin.getMiniMessage(),
                     Placeholder.parsed("name", account.getDisplayName()),
-                    Placeholder.parsed("symbol", symbol),
                     Placeholder.parsed("currency", currency)
             ));
         }, () -> {

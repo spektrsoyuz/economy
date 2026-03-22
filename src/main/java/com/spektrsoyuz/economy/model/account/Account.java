@@ -199,7 +199,7 @@ public final class Account {
     /**
      * Queues the current account state for persistence.
      */
-    private void saveAccount() {
+    public void saveAccount() {
         this.accountConsumer.accept(this);
     }
 

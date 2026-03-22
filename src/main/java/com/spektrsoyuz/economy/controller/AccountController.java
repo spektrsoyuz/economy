@@ -127,6 +127,9 @@ public final class AccountController {
         this.accounts.put(id, account);
         if (player) this.onlineAccounts.put(id, account);
 
+        // Save the account
+        account.saveAccount();
+
         return account;
     }
 
