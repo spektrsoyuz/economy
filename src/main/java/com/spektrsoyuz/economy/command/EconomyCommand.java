@@ -103,9 +103,25 @@ public final class EconomyCommand {
                 .then(set)
                 .then(subtract)
                 .then(unfreeze)
+                .executes(this::execute)
                 .build();
 
         registrar.register(command, "Manage the economy", List.of("eco"));
+    }
+
+    // Executes the command
+    private int execute(final CommandContext<CommandSourceStack> ctx) {
+        final CommandSender sender = ctx.getSource().getSender();
+
+        // Send message to sender
+        sender.sendMessage(this.plugin.getConfigController().getMessage(
+                "command-economy",
+                this.plugin.getMiniMessage(),
+                Placeholder.parsed("plugin", Constants.PLUGIN_NAME),
+                Placeholder.parsed("version", Constants.PLUGIN_VERSION)
+        ));
+
+        return Command.SINGLE_SUCCESS;
     }
 
     // Executes the 'add' sub-command

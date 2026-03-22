@@ -7,7 +7,9 @@ package com.spektrsoyuz.economy;
  */
 public final class Constants {
 
+    // Plugin
     public static final String PLUGIN_NAME = "economy";
+    public static final String PLUGIN_VERSION = "1.0.0";
 
     // Config paths
     public static final String CONFIG_PRIMARY = "config.conf";
