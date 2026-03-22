@@ -107,31 +107,26 @@ public final class PayCommand {
         }
 
         // Notify player of transaction success
-        this.notifySuccess(sender, target, senderAccount, amount);
-        return Command.SINGLE_SUCCESS;
-    }
+        final String currency = EconomyUtils.format(this.plugin, amount);
 
-    // Notifies the player of a successful transaction
-    private void notifySuccess(
-            final Player sender,
-            final Player target,
-            final Account senderAccount,
-            final BigDecimal amount
-    ) {
-        final String currency = EconomyUtils.format(plugin, amount);
-        final String symbol = plugin.getConfigController().getCurrencyConfig().getSymbol();
-
-        final TagResolver[] tags = {
-                Placeholder.parsed("name", senderAccount.getDisplayName()),
-                Placeholder.parsed("symbol", symbol),
+        this.sendMessage(
+                sender,
+                "command-pay-send",
+                Placeholder.parsed("name", targetAccount.getDisplayName()),
                 Placeholder.parsed("currency", currency)
-        };
+        );
 
-        this.sendMessage(sender, "command-pay-send", tags);
-        this.sendMessage(target, "command-pay-receive", tags);
+        this.sendMessage(
+                target,
+                "command-pay-receive",
+                Placeholder.parsed("name", senderAccount.getDisplayName()),
+                Placeholder.parsed("currency", currency)
+        );
 
         sender.playSound(sender.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+
+        return Command.SINGLE_SUCCESS;
     }
 
     // Handles a transaction error
