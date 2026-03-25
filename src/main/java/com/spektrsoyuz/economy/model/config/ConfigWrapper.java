@@ -18,35 +18,26 @@ public final class ConfigWrapper {
 
     private final EconomyPlugin plugin;
     private final String fileName;
+    private final Path path;
     private final HoconConfigurationLoader loader;
 
     @Getter
     private CommentedConfigurationNode node;
 
     /**
-     * Constructs a new config wrapper.
+     * Constructs a new {@code ConfigWrapper} object.
      *
-     * @param plugin   The economy plugin instance.
-     * @param fileName The name of the file (e.g., "config.conf").
+     * @param plugin   the Java plugin
+     * @param fileName the config file name
      */
-    public ConfigWrapper(
-            final EconomyPlugin plugin,
-            final String fileName
-    ) {
+    public ConfigWrapper(final EconomyPlugin plugin, final String fileName) {
         this.plugin = plugin;
         this.fileName = fileName;
-
-        final Path path = plugin.getDataPath().resolve(fileName);
-
-        // Check if file exists at path
-        if (Files.notExists(path)) {
-            plugin.getComponentLogger().info("Config file '{}' not found, creating it", fileName);
-            plugin.saveResource(fileName, false);
-        }
+        this.path = plugin.getDataPath().resolve(fileName);
 
         // Create loader
         this.loader = HoconConfigurationLoader.builder()
-                .path(path)
+                .path(this.path)
                 .prettyPrinting(true)
                 .build();
     }
@@ -55,11 +46,22 @@ public final class ConfigWrapper {
      * Synchronously loads the configuration from disk into the {@link #node}.
      */
     public void load() {
+        // Check if file exists at path
+        if (Files.notExists(this.path)) {
+            this.plugin.getComponentLogger().info("Config file '{}' not found, creating it", this.fileName);
+            this.plugin.saveResource(this.fileName, false);
+        }
+
+        // Load node using loader
         try {
             this.node = this.loader.load();
         } catch (final ConfigurateException e) {
             this.plugin.getComponentLogger().error("Failed to load config '{}'", this.fileName, e);
-            this.node = this.loader.createNode();
+
+            if (this.node == null) {
+                // Create node if missing
+                this.node = this.loader.createNode();
+            }
         }
     }
 
@@ -69,6 +71,7 @@ public final class ConfigWrapper {
     public void save() {
         if (this.node == null) return;
 
+        // Save node using loader
         try {
             this.loader.save(this.node);
         } catch (final ConfigurateException e) {
